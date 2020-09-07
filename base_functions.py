@@ -9,8 +9,8 @@ def getBaseFunc(u_real, i, k = 3):
         u = np.append(u,1)
     return getBaseFuncRec(u,i,k)
 
-def getBaseFuncRec(u, i, k):
-    # Recursive algorithm to find base function
+# Recursive algorithm to find base function
+def getBaseFunc(u, i, k = 3):
     if k == 0:
         if u[i-1] == u[i]:
             return lambda x: 0
@@ -59,7 +59,7 @@ def getCubicSpline(x, u, d):
     # for i in range(len(u)):
     #     if (x >= u[i]) * (x < u[i+1]):
     #         I = something
-    s_x
+    
     for i in range(len(x)):
         control_points_x = np.array([])
         control_points_y = np.array([])
