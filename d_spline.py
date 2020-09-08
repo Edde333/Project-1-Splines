@@ -27,7 +27,7 @@ class d_spline:
         None.
 
         """
-        self.k = 3
+        self.k = k
         self.u = u
         self.d = d
        
@@ -65,7 +65,7 @@ class d_spline:
                 ret[dimension] = self.dRecursive(x, I, currd, depth, left, right, g)
         else: 
             self.d = self.expandArray(self.d)
-            left = I
+            left = (I+g-self.k)
             right = I+1
             depth = 0
             return self.dRecursive(x, I, self.d, depth, left, right, g)
