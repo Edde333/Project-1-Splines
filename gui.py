@@ -7,8 +7,8 @@ import numpy as np
 import math
 
 
-func1 = lambda x: np.cos(x)
-func2 = lambda x: np.sin(x)
+funcx = lambda x: np.cos(x)
+funcy = lambda x: np.sin(x)
 
 #get a list of points to fit a spline to as well
 N = 10
@@ -17,8 +17,8 @@ umax = 10
 u = np.linspace(umin,umax,N)
 
 #spline fit
-xvals = func1(u)
-yvals = func2(u)
+xvals = funcx(u)
+yvals = funcy(u)
 
 xspline = inter.InterpolatedUnivariateSpline (u, xvals)
 yspline = inter.InterpolatedUnivariateSpline (u, yvals)
@@ -54,7 +54,7 @@ def reset(event):
     global yvals
     global spline
     #reset the values
-    yvals = func1(u)
+    yvals = funcx(u)
     yspline = inter.InterpolatedUnivariateSpline (u, yvals)
     l.set_ydata(yvals)
     m.set_xdata(xspline(U))
@@ -129,7 +129,7 @@ def onclick(event):
          plt.plot([1,2],[2,2])
 
 U = np.linspace(umin,umax,100)
-ax1.plot (func1(U), func2(U), 'k--', label='original')
+ax1.plot (funcx(U), funcy(U), 'k--', label='original')
 l, = ax1.plot (xvals,yvals,color='k',linestyle='none',marker='o',markersize=8)
 m, = ax1.plot (xspline(U), yspline(U), 'r-', label='spline')
 
