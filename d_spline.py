@@ -32,7 +32,7 @@ class d_spline:
         self.d = d
        
     
-    def dSpline(self,x):
+    def dSpline(self, x, g):
         """
         The main function used to calculate the values of the spline
         
@@ -41,9 +41,15 @@ class d_spline:
         x : Float
             The points of interest of the spline. 
 
+        g : Int
+            Indicates which blossom which will be calculated. For example:
+            If k=g=3 is selected d[u,u,u] = s(u) is calculated. While if 
+            k=3, g=2 the blossom d[u,u,u_i] is calculated.
+            
         Returns
         -------
-        An array (1xn), or a matrix (kxn) depending on the 
+        An array (1xn), or a matrix (kxn) depending on the dimension of the
+        spline. 
             DESCRIPTION.
         """
         self.u = self.expandArray(self.u)
@@ -56,21 +62,21 @@ class d_spline:
                 left = I
                 right = I+1
                 depth = 0
-                ret[dimension] = self.dRecursive(x, I, currd, depth, left, right)
+                ret[dimension] = self.dRecursive(x, I, currd, depth, left, right, g)
         else: 
             self.d = self.expandArray(self.d)
             left = I
             right = I+1
             depth = 0
-            return self.dRecursive(x, I, self.d, depth, left, right)
+            return self.dRecursive(x, I, self.d, depth, left, right, g)
         return ret
 
 
-    def expandArray(self,u):
+    def expandArray(self, u):
         """
-        Expands the vector u by prepending k-1 elements
-        equal to the first element in u, and appends 
-        k-1 elements equal to the last element in u.
+        Expands the vector u by prepending k-1 elements equal to the first
+        element in u, and appends k-1 elements equal to the last element in u.
+        Effectively turns the original u vector (k,K-4) -> (k,K)
         
         Parameters
         ----------
@@ -80,7 +86,10 @@ class d_spline:
         Returns
         -------
         u : Array of floats (1,K)
-            The extended Array u.
+            The extended Array u:
+            [u1, u2, ... , uK-3, uK-2] -> 
+            [u1, u1, u1, u2, u3, ... , uK-3, uK-2, uK-2, uK-2]
+            |------| <-------- k-1 times --------> |---------|
 
         """
         u = np.insert(u, 0, np.ones(self.k-1)*u[0])
@@ -88,7 +97,7 @@ class d_spline:
         return u
     
     
-    def findHotInterval(self,u,x):
+    def findHotInterval(self, u, x):
         """
         Calculates the hot interval for the point x.
 
@@ -115,7 +124,7 @@ class d_spline:
         return I
     
     
-    def dRecursive(self, x, I, d, depth, left, right):
+    def dRecursive(self, x, I, d, depth, left, right, g):
         """
         The recursive step of the blossom algorithm
         
@@ -138,20 +147,25 @@ class d_spline:
         right : Int
             The index of the right-most knot in the
             interval I
+        g : Int
+            Indicates which blossom which will be calculated. For example:
+            If k=g=3 is selected d[u,u,u] = s(u) is calculated. While if 
+            k=3, g=2 the blossom d[u,u,u_i] is calculated.
+            
         Returns
         -------
         The left-most value if in the deepest layer of recursion, else
         the calculated value for the given values in x.
         """
-        if np.any(right-left == self.k+1):
+        if np.any(right-left == g+1):
             return d[left+1]
         a = self.alpha(x,left, right)
-        d0 = self.dRecursive(x, I, d,  depth + 1, left - 1, right)
-        d1 = self.dRecursive(x, I, d, depth + 1, left, right + 1)
+        d0 = self.dRecursive(x, I, d,  depth + 1, left - 1, right, g)
+        d1 = self.dRecursive(x, I, d, depth + 1, left, right + 1, g)
         return a*d0 + (1-a)*d1
         
     
-    def alpha(self, x,left, right):
+    def alpha(self, x, left, right):
         """
         Generates the values of alpha which are used to 
         calculate the values of x in the blossom algorithm.
