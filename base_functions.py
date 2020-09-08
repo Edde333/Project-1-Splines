@@ -8,17 +8,19 @@ import numpy as np
 """
 
 
-def getBaseFunc(u_real, i, k = 3):
+def getBaseFunc(u_real, i):
     # Solves fact that extra knots seems to be needed but are not
     u = u_real.copy()
+    u = np.append(u,1)
+
     if i > len(u_real) - 3 or i < 0:
-        raise Exepction("Wrong input")
+        raise Exception("Wrong input")
     
-    for j in range(k-2):
-        u = np.append(u,1)
-    return getBaseFuncRec(u,i,k)
-
-
+    # Handles the last base function separately (Defines it as 1 in endpoint)
+    if i == len(u_real) - 3:
+        return lambda x: (x == u_real[-3]) + getBaseFuncRec(u,i)(x)
+    else:
+        return getBaseFuncRec(u,i)
 
 # Recursive algorithm to find base function
 def getBaseFuncRec(u, i, k = 3):
@@ -55,19 +57,8 @@ def getBaseFuncRec(u, i, k = 3):
             factor2 = lambda x: 0
         else:
             factor2 = lambda x: (u[i+k] - x)/(u[i+k] - u[i])
-        # try:
-        #     factor1 = lambda x: (x - u[i-1])/(u[i+k-1] - u[i-1])
-        # except ZeroDivisionError:
-        #     factor1 = lambda x: 0
-            
-        # try:
-        #     factor2 = lambda x: (u[i+k] - x)/(u[i+k] - u[i])
-        # except ZeroDivisionError:
-        #     factor2 = lambda x: 0
         
         return lambda x: factor1(x) * getBaseFuncRec(u, i, k-1)(x) + factor2(x) * getBaseFuncRec(u, i+1, k-1)(x)
-
-
 
 
 def getCubicSpline(x, u, d):
@@ -79,7 +70,7 @@ def getCubicSpline(x, u, d):
     x : array of floats, array of floats
         the point(s) containd in u, for which the alogorithm computes a spline
     u : array of floats, length K, nodes in u_i
-    d : coordinates corresponding to nodes u_1 to u_K-1 
+    d : coordinates corresponding to nodes u_0 to u_K-2 
 
 
     Raises
@@ -101,37 +92,37 @@ def getCubicSpline(x, u, d):
         
     # Finds and saves all base functions in array base_functions
     base_functions = np.array([])
-    for i in range(len(u)-2):
+    for i in range(len(u)-1):
         base_functions = np.append(base_functions, getBaseFunc(u, i))
-    
                                    
     # Finds hot intervals
-    I = np.array([]) 
-    for i in range(len(x)):
+    I = []
+    for i in range(len(x)-1):
         for j in range(len(u)):
             if (x[i] >= u[j]) and (x[i] < u[j+1]):
-                I = np.append(I, j)
-                
-    # for i in range(len(u)):
-    #     if (x >= u[i]) * (x < u[i+1]):
-    #         I = something
+                I.append(j)
     
-    for i in range(len(x)):
+    s_z = np.array([])
+    s_y = np.array([])
+    
+    for i in range(len(x)-1):
         control_points_z = np.array([])
         control_points_y = np.array([])
         for j in range(4):
             control_points_z = np.append(control_points_z, d[(I[i]-2) + j][0])
             control_points_y = np.append(control_points_y, d[(I[i]-2) + j][1])
-        hot_base_functions = base_functions[I[i]-1 : I[i]+3]
-        s_z = control_points_z @ hot_base_functions
-        s_y = control_points_y @ hot_base_functions
-
+        hot_base_functions = base_functions[I[i]-2 : I[i]+2]
+        bf_result = np.array([])
+        for bf in hot_base_functions:
+            bf_result = np.append(bf_result, bf(x[i]))
+        s_z = np.append(s_z, control_points_z @ bf_result)
+        s_y = np.append(s_y, control_points_y @ bf_result)
     
-    
-    return zip(s_z, s_y)
+    # Last control point is multiplied by 1 in endpoint
+    s_z = np.append(s_z, d[-1][0])
+    s_y = np.append(s_y, d[-1][1])
 
-
-
+    return np.array((s_z, s_y)).T
 
 def baseFuncSum(x, u):
     """
@@ -151,5 +142,11 @@ def baseFuncSum(x, u):
     for i in range(len(u)-2):
         base_functions = np.append(base_functions, getBaseFunc(u, i))
     
-                                   
-    return np.sum(basefunctions(x))
+    result = np.array([])
+    for i in range(len(x)):
+        sum = 0
+        for bf in base_functions:
+            sum += bf(x[i])
+        result = np.append(result, sum)
+    
+    return result
