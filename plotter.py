@@ -243,7 +243,7 @@ print(curve[:,200])
 
 
 #set up a plot
-fig,axes = plt.subplots(1,1,figsize=(9.0,8.0),sharex=True)
+fig,axes = plt.subplots(1,1,figsize=(9.0,8.0),sharex=False)
 ax1 = axes
 
 

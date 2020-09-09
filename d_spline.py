@@ -16,7 +16,7 @@ class d_spline:
         Parameters
         ----------
         k : Int
-            The dimension of the spline (for example 1D, 2D, 3D...)
+            The order of the spline (for example 1D, 2D, 3D...)
         u : Array (1xK-4)
             The chosen u-values of the spline
         d : Array (1xK-4)
@@ -193,3 +193,82 @@ class d_spline:
         alph = (self.u[right] - x)/alphdivider
         alph[zeroValues] = 0
         return alph
+    
+    def plot(self, D,plot_options = ['spline', 'control points'] ):
+        u_min = min(self.u)
+        u_max = max(self.u)
+        
+        fig, ax = plt.subplots(1,1)
+
+        if 'spline' in plot_options:
+            u_intervall = np.linspace(u_min, u_max,1000*int(u_max-u_min)+1)
+            vals = self.__call__(u_intervall, D, g = 3)
+            graph = ax.plot (vals[0], vals[1], 'r-', label='spline')
+
+        if 'control points' in plot_options:
+            u_intervall = self.u.copy()
+            vals = self.__call__(u_intervall, D, g = 3)
+            graph = ax.plot (D[0], D[1], color = 'k', linestyle = 'dotted', marker = 'o')
+
+        
+        
+        plt.show()
+        
+     
+if __name__ == '__main__':
+            
+    CONTROL = [(-12.73564, 9.03455),
+    (-12.73564, 9.03455),
+    (-12.73564, 9.03455),
+    (-26.77725, 15.89208),
+    (-42.12487, 20.57261),
+    (-15.34799, 4.57169),
+    (-31.72987, 6.85753),
+    (-49.14568, 6.85754),
+    (-38.09753, -1e-05),
+    (-67.92234, -11.10268),
+    (-89.47453, -33.30804),
+    (-21.44344, -22.31416),
+    (-32.16513, -53.33632),
+    (-32.16511, -93.06657),
+    (-2e-05, -39.83887),
+    (10.72167, -70.86103),
+    (32.16511, -93.06658),
+    (21.55219, -22.31397),
+    (51.377, -33.47106),
+    (89.47453, -33.47131),
+    (15.89191, 0.00025),
+    (30.9676, 1.95954),
+    (45.22709, 5.87789),
+    (14.36797, 3.91883),
+    (27.59321, 9.68786),
+    (39.67575, 17.30712),
+    (39.67575, 17.30712),
+    (39.67575, 17.30712)]
+    
+    D = np.array(CONTROL).T
+    U_min = 0
+    U_max = 1
+    U = np.linspace(U_min, U_max, 25*(U_max-U_min)+1)
+    U = np.insert(U,0, [0,0])
+    U = np.insert(U,-1, [1,1])
+    #u = np.linspace(U_min, U_max,1000*(U_max-U_min)+1)
+
+    dspline = d_spline(3, U)  
+    
+    dspline.plot(D)
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+    
+    
