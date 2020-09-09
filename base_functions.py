@@ -177,10 +177,3 @@ def baseFuncSum(x, u):
         result = np.append(result, sum)
     
     return result
-
-
-
-
-
-    
-
