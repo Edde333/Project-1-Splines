@@ -12,7 +12,17 @@ from d_spline import d_spline
 
 
 def get_example_settings():
-        
+    """
+    Creates a U, D and u array.
+        U is the indices given by the user. u_i for i =0,...,K
+        D is the coordinate of the controlpoints
+        u is a linspace between u_0 and u_K.
+    ----------
+
+    Returns U, D, u
+    -------
+
+    """
     # Example given
     CONTROL = [(-12.73564, 9.03455),
     (-12.73564, 9.03455),
@@ -54,6 +64,18 @@ def get_example_settings():
 
 
 def update(event):
+    """
+
+    Parameters
+    ----------
+    event : matplotlib.event
+        Normaly beeing a mouse movment while a point is pind.
+
+    Returns
+    -------
+    None.
+
+    """
     # Updates all the graphs and draws the figure again
     global spline_creator
     global U
@@ -104,6 +126,19 @@ def update(event):
     fig.canvas.draw_idle()
         
 def button_press_callback(event):
+    """
+
+    Parameters
+    ----------
+    event : TYPE
+        Executed when the mouse is pressed and checks if there is a point near by the mouse.
+        And if yes it pins it.
+
+    Returns
+    -------
+    None.
+
+    """
     # whenever a mouse button is pressed
     global pind
     if event.inaxes is None:
@@ -125,15 +160,16 @@ def button_press_callback(event):
     
 
 def button_release_callback(event):
-    # Whenever a mouse button is released
+    """
+        Set pind = None
+    """
     global pind
-    if event.button != 1:
-        return
     pind = None
     
 def get_ind_under_point(event):
-    # Get the Index of the point pressed (Within the sccuracy given by epsilon)
-
+    """
+    Get the Index of the point pressed (Within the sccuracy given by epsilon)
+    """
     # Get distance to points
     tinv = ax1.transData 
     xr = np.reshape(D[0],(np.shape(D[0])[0],1))
@@ -152,6 +188,18 @@ def get_ind_under_point(event):
     return ind
 
 def motion_notify_callback(event):
+    """
+
+    Parameters
+    ----------
+    event : TYPE
+        Called when a motoin is detected and if there also is point pind, the graph willb e updated.
+
+    Returns
+    -------
+    None.
+
+    """
     # Update when things move
     
     if pind is None:
