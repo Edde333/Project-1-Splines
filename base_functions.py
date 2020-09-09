@@ -3,22 +3,38 @@ from  pylab import *
 import numpy as np
 
 
-"""
-
-"""
-
 
 def getBaseFunc(u_real, i):
+    """
+    Method that calculates the basefunction 
+
+    Parameters
+    ----------
+    u_real : array of floats, nodes in u_i
+    i : The index for a "hot node"
+
+    Raises
+    ------
+    Exception "Wrong input"
+       if the "hot node" i is outside the interval of u
+
+    Returns
+    -------
+    basefunction N_i^k, function (x)
+        The base function for a given "hot node" i
+
+    """
     # Solves fact that extra knots seems to be needed but are not
     u = u_real.copy()
     u = np.append(u,1)
-
-    if i > len(u_real) - 3 or i < 0:
-        raise Exception("Wrong input")
     
     # Handles the last base function separately (Defines it as 1 in endpoint)
     if i == len(u_real) - 3:
         return lambda x: (x == u_real[-3]) + getBaseFuncRec(u,i)(x)
+    
+    elif i > (len(u_real) - 3) or i < 0:
+        raise Exception("Wrong input")
+
     else:
         return getBaseFuncRec(u,i)
 
@@ -27,15 +43,11 @@ def getBaseFuncRec(u, i, k = 3):
     """
     Recursive method that finds the base function corresponding with 
     a certain index in the u-vector
-
-
     Parameters 
     --------
     u : array of floats, nodes in u_i
     i : integer, the index of the relevant node u_i
     k : integer, the degree of the desired polynomial, is decreased with every iteration 
-
-
     Returns 
     -------
     Function (x)
@@ -71,13 +83,10 @@ def getCubicSpline(x, u, d):
         the point(s) containd in u, for which the alogorithm computes a spline
     u : array of floats, length K, nodes in u_i
     d : coordinates corresponding to nodes u_0 to u_K-2 
-
-
     Raises
     ------
     Exception "Wrong input"
         if any index x lays outside the bounds of u
-
     Returns
     -------
     (s(z), s(y))
@@ -92,7 +101,7 @@ def getCubicSpline(x, u, d):
         
     # Finds and saves all base functions in array base_functions
     base_functions = np.array([])
-    for i in range(len(u)-1):
+    for i in range(len(u)-2):       #Changed from len(u) - 1
         base_functions = np.append(base_functions, getBaseFunc(u, i))
                                    
     # Finds hot intervals
@@ -101,10 +110,14 @@ def getCubicSpline(x, u, d):
         for j in range(len(u)):
             if (x[i] >= u[j]) and (x[i] < u[j+1]):
                 I.append(j)
+                
+
     
     s_z = np.array([])
     s_y = np.array([])
-    
+    control_points_z = np.array([])
+    control_points_y = np.array([])
+    bf_result = np.array([])
     for i in range(len(x)-1):
         control_points_z = np.array([])
         control_points_y = np.array([])
@@ -118,25 +131,39 @@ def getCubicSpline(x, u, d):
         s_z = np.append(s_z, control_points_z @ bf_result)
         s_y = np.append(s_y, control_points_y @ bf_result)
     
-    # Last control point is multiplied by 1 in endpoint
-    s_z = np.append(s_z, d[-1][0])
-    s_y = np.append(s_y, d[-1][1])
+    
+        #Case x is array of size 1
+    if len(I) == 0:
+        for i in range(len(u)):
+            if (x[0] >= u[i]) and (x[0] < u[i+1]):
+                hot_base_functions = base_functions[i-2 : i+2]
+                for j in range(4):
+                    control_points_z = np.append(control_points_z, d[(i-2) + j][0])
+                    control_points_y = np.append(control_points_y, d[(i-2) + j][1])
+               
+                for bf in hot_base_functions:
+                    bf_result = np.append(bf_result, bf(x[0]))
+                s_z = control_points_z @ bf_result
+                s_y = control_points_y @ bf_result
+        
+        
+        # Last control point is multiplied by 1 in endpoint
+    else:    
+        s_z = np.append(s_z, d[-1][0])
+        s_y = np.append(s_y, d[-1][1])
 
     return np.array((s_z, s_y)).T
 
 def baseFuncSum(x, u):
     """
     Returns the sum of all base functions in points x
-
     Parameters
     ----------
     x : array of floats, points for which the algorithm should work
     u : array of floats, nodes in u_i
-
     Returns
     -------
     array of floats, sum of all base functions in the given points x
-
     """
     base_functions = np.array([])
     for i in range(len(u)-2):
@@ -150,3 +177,10 @@ def baseFuncSum(x, u):
         result = np.append(result, sum)
     
     return result
+
+
+
+
+
+    
+
