@@ -10,7 +10,7 @@ This class is used to calculate a spline using a blossom algorithm.
 class d_spline:
     
     
-    def __init__(self, k, u, d):
+    def __init__(self, k, u):
         """
         Creates an object which is used to calculate the spline values.
         Parameters
@@ -29,10 +29,9 @@ class d_spline:
         """
         self.k = k
         self.u = u
-        self.d = d
        
     
-    def dSpline(self, x, g):
+    def dSpline(self, x,d, g):
         """
         The main function used to calculate the values of the spline
         
@@ -40,7 +39,8 @@ class d_spline:
         ----------
         x : Float
             The points of interest of the spline. 
-
+         d : Array of floats
+            An array of control points for the spline
         g : Int
             Indicates which blossom which will be calculated. For example:
             If k=g=3 is selected d[u,u,u] = s(u) is calculated. While if 
@@ -52,49 +52,48 @@ class d_spline:
         spline. 
             DESCRIPTION.
         """
-        self.u = self.expandArray(self.u)
-        ret = np.zeros((self.d.ndim,x.shape[0]))
+        #u = self.expandArray(self.u)
+        ret = np.zeros((d.ndim,x.shape[0]))
         I = self.findHotInterval(self.u,x)
         # Run dSpline for each row(dimension) of the d matrix.
-        if self.d.ndim > 1:
-            for dimension in range(self.d.ndim):
-                currd = self.expandArray(self.d[dimension])
+        if d.ndim > 1:
+            for dimension in range(d.ndim):
+                currd = d[dimension]
                 left = I
                 right = I+1
                 depth = 0
                 ret[dimension] = self.dRecursive(x, I, currd, depth, left, right, g)
         else: 
-            self.d = self.expandArray(self.d)
             left = (I+g-self.k)
             right = I+1
             depth = 0
-            return self.dRecursive(x, I, self.d, depth, left, right, g)
+            return self.dRecursive(x, I, d, depth, left, right, g)
         return ret
 
 
-    def expandArray(self, u):
-        """
-        Expands the vector u by prepending k-1 elements equal to the first
-        element in u, and appends k-1 elements equal to the last element in u.
-        Effectively turns the original u vector (k,K-4) -> (k,K)
+    # def expandArray(self, u):
+    #     """
+    #     Expands the vector u by prepending k-1 elements equal to the first
+    #     element in u, and appends k-1 elements equal to the last element in u.
+    #     Effectively turns the original u vector (k,K-4) -> (k,K)
         
-        Parameters
-        ----------
-        u : Array of floats (1,K-4)
-            The vector that will be expanded
+    #     Parameters
+    #     ----------
+    #     u : Array of floats (1,K-4)
+    #         The vector that will be expanded
 
-        Returns
-        -------
-        u : Array of floats (1,K)
-            The extended Array u:
-            [u1, u2, ... , uK-3, uK-2] -> 
-            [u1, u1, u1, u2, u3, ... , uK-3, uK-2, uK-2, uK-2]
-            |------| <-------- k-1 times --------> |---------|
+    #     Returns
+    #     -------
+    #     u : Array of floats (1,K)
+    #         The extended Array u:
+    #         [u1, u2, ... , uK-3, uK-2] -> 
+    #         [u1, u1, u1, u2, u3, ... , uK-3, uK-2, uK-2, uK-2]
+    #         |------| <-------- k-1 times --------> |---------|
 
-        """
-        u = np.insert(u, 0, np.ones(self.k-1)*u[0])
-        u = np.append(u,np.ones(self.k-1)*u[-1])
-        return u
+    #     """
+    #     u = np.insert(u, 0, np.ones(self.k-1)*u[0])
+    #     u = np.append(u,np.ones(self.k-1)*u[-1])
+    #     return u
     
     
     def findHotInterval(self, u, x):
