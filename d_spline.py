@@ -31,7 +31,7 @@ class d_spline:
         self.u = u
        
     
-    def dSpline(self, x,d, g):
+    def __call__(self, x, d, g):
         """
         The main function used to calculate the values of the spline
         
@@ -123,7 +123,7 @@ class d_spline:
         return I
     
     
-    def dRecursive(self, x, I, d, depth, left, right, g):
+    def dRecursive(self, x d, left, right, g):
         """
         The recursive step of the blossom algorithm
         
@@ -159,8 +159,8 @@ class d_spline:
         if np.any(right-left == g+1):
             return d[left+1]
         a = self.alpha(x,left, right)
-        d0 = self.dRecursive(x, I, d,  depth + 1, left - 1, right, g)
-        d1 = self.dRecursive(x, I, d, depth + 1, left, right + 1, g)
+        d0 = self.dRecursive(x, d, left - 1, right, g)
+        d1 = self.dRecursive(x, d, left, right + 1, g)
         return a*d0 + (1-a)*d1
         
     
