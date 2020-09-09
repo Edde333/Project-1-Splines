@@ -210,8 +210,6 @@ class d_spline:
             vals = self.__call__(u_intervall, D, g = 3)
             graph = ax.plot (D[0], D[1], color = 'k', linestyle = 'dotted', marker = 'o')
 
-        
-        
         plt.show()
         
      
