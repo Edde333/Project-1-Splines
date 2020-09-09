@@ -93,7 +93,7 @@ class TestIdentity(unittest.TestCase):
         
         with self.assertRaises(Exception): getCubicSpline(x,u,d)
 
-    
+  
     def testL2Norm(k = 3, u = np.linspace(1,10,10), x = linspace(0,10,100),
                d = np.array([[0, 1, 3, 3, 4, 5, 6, 7, 8, 9, 10],
               [2, 4, 2, 7, 4, 8, 5, 3, 4, 6, 0]])):
@@ -107,15 +107,15 @@ class TestIdentity(unittest.TestCase):
         d1 = np.array([[1,1,1, 3, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10],
                   [4, 4, 4, 2, 7, 4, 8, 5, 3, 4, 6, 0,0,0]])
     
-        ds = d_spline(k, u, d)
+        ds = d_spline(k, u, d1)
         res = ds.dSpline(x,3)
         
 
         d2x = np.insert(d[0], 0, np.ones(k-1)*d[0][0])
         d2y = np.insert(d[1], 0, np.ones(k-1)*d[1][0])
         N_i = []
-        for i in range(len(u2)-2):
-            N_i.append(getBaseFunc(u2,i))
+        for i in range(len(u)-2):
+            N_i.append(getBaseFunc(u,i))
             
         base_x = N_i[0](x)*d2x[0]
         base_y = N_i[0](x)*d2y[0]
@@ -129,7 +129,7 @@ class TestIdentity(unittest.TestCase):
         
         self.assertAlmostEqual(L2norm, expected)
         
-        """
+        """ 
         plt.figure()
         plt.plot(res[0],res[1])
         plt.show()
@@ -138,8 +138,8 @@ class TestIdentity(unittest.TestCase):
         plt.plot(base_x,base_y)
         plt.show()
         plt.scatter(d2x,d2y)
-        """   
-        
+        """    
+      
     
 if __name__ == "__main__":
     testL2Norm()
