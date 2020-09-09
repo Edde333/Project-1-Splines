@@ -150,3 +150,33 @@ def baseFuncSum(x, u):
         result = np.append(result, sum)
     
     return result
+
+def expandArray( u, k):
+    """
+    Expands the vector u by prepending k-1 elements equal to the first
+    element in u, and appends k-1 elements equal to the last element in u.
+    Effectively turns the original u vector (k,K-4) -> (k,K)
+    
+    Parameters
+    ----------
+    u : Array of floats (1,K-4)
+        The vector that will be expanded
+
+    Returns
+    -------
+    u : Array of floats (1,K)
+        The extended Array u:
+        [u1, u2, ... , uK-3, uK-2] -> 
+        [u1, u1, u1, u2, u3, ... , uK-3, uK-2, uK-2, uK-2]
+        |------| <-------- k-1 times --------> |---------|
+
+    """
+    u = np.insert(u, 0, np.ones(k-1)*u[0])
+    u = np.append(u,np.ones(k-1)*u[-1])
+    return u
+    
+    
+    
+    
+    
+    
