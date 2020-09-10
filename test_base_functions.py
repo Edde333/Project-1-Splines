@@ -53,7 +53,7 @@ class TestIdentity(unittest.TestCase):
          (27.59321, 9.68786),
          (39.67575, 17.30712)]
         result = getCubicSpline(x,u,d)
-        a = result[0]
+        a = result
         expectedz=  -31.90219167
         expectedy = 6.47655833
         self.assertAlmostEqual(a[0] , expectedz)
@@ -89,26 +89,26 @@ class TestIdentity(unittest.TestCase):
          (14.36797, 3.91883),
          (27.59321, 9.68786),
          (39.67575, 17.30712)]
-        x = [ 2]
+        x = [2]
         
         with self.assertRaises(Exception): getCubicSpline(x,u,d)
 
+
   
-    def testL2Norm(k = 3, u = np.linspace(1,10,10), x = linspace(0,10,100),
-               d = np.array([[0, 1, 3, 3, 4, 5, 6, 7, 8, 9, 10],
-              [2, 4, 2, 7, 4, 8, 5, 3, 4, 6, 0]])):
+    def test_L2Norm(self):
+        d = np.array([[0, 1, 3, 3, 4, 5, 6, 7, 8, 9, 10],[2, 4, 2, 7, 4, 8, 5, 3, 4, 6, 0]])
         k = 3
         u = np.linspace(1,10,10)
         u = np.insert(u, 0, np.ones(k-1)*u[0])
-        u = np.append(u2,np.ones(k-1)*u[-1])
+        u = np.append(u,np.ones(k-1)*u[-1])
         x = linspace(1,10,100)
         d = np.array([[1, 3, 3, 4, 5, 6, 7, 8, 9, 10],
                   [4, 2, 7, 4, 8, 5, 3, 4, 6, 0]])
         d1 = np.array([[1,1,1, 3, 3, 4, 5, 6, 7, 8, 9, 10, 10, 10],
                   [4, 4, 4, 2, 7, 4, 8, 5, 3, 4, 6, 0,0,0]])
     
-        ds = d_spline(k, u, d1)
-        res = ds.dSpline(x,3)
+        ds = d_spline(k, u)
+        res = ds(x,d1,3)
         
 
         d2x = np.insert(d[0], 0, np.ones(k-1)*d[0][0])
