@@ -89,6 +89,8 @@ class minimization_solver():
         elif hessian_approximation_method == "one of 5 options...":
             pass
 
+
+
     def __call__(self):
         dx = 2*self.sensitivity
         x_k = self.x_k
