@@ -144,7 +144,12 @@ def symmetric_broyden(function, gradient, xk, xk_1, prev_hessian):
         specified points xk, and xk_1
 
     '''
-    pass
+    deltak = xk - xk_1
+    gammak = gradient(xk) - gradient(xk_1)
+    u = deltak - prev_hessian@gammak
+    a = 1/(u@gammak)
+    new_hess = prev_hessian + a*np.outer(u,u)
+    return new_hess
 
 def DFP(function, gradient, xk, xk_1, prev_hessian):
     '''
@@ -200,11 +205,11 @@ def BFGS(function, gradient, xk, xk_1, prev_hessian):
         
 
 if __name__ == "__main__":
-    function = lambda x: x[0]**3 + x[1]**3
-    gradient = lambda x: np.array([6*x[0],6*x[1]])
-    xk_1 = np.array([1, 1])
-    xk = np.array([2, 2])
-    prev_hessian = np.array([[6, 0],[0,6]])
+    function = lambda x: x[0]**3 + x[1]**3 + x[2]**3
+    gradient = lambda x: np.array([6*x[0],6*x[1],6*x[2]])
+    xk_1 = np.array([1, 1, 1])
+    xk = np.array([2, 2, 2])
+    prev_hessian = np.array([[6, 0, 0],[0,6, 0],[0,0,6]])
     y = function(xk)
-    new_hessian = good_broyden(function,gradient, xk, xk_1, prev_hessian)
+    new_hessian = symmetric_broyden(function,gradient, xk, xk_1, prev_hessian)
     print(new_hessian)
