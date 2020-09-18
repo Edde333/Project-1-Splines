@@ -194,19 +194,18 @@ def BFGS(function, gradient, xk, xk_1, prev_hessian):
 
     '''
     pass
-        
 
 def brute_hessian(function, xk, h = 0.000001):
     '''
     Calculates the approximated inverse Hessian matrix for the probmlem at the
-        specified points xk, using a standards rank 2 approximation.
+        specified points xk, using a simple brute force method
 
     Parameters
     ----------
     function : Lamda function
         The function that should be minimized.
     xk : N-Array
-        An array containing the current coordinates of our Newton method 
+        An array containing the current coordinates of our Newton method
     Returns
     -------
     Returns the approximated inverse Hessian matrix for the probmlem at the
@@ -224,7 +223,7 @@ def brute_hessian(function, xk, h = 0.000001):
         I[index[0]] = 0
         J[index[1]] = 0
     return hessian
-
+        
 
 if __name__ == "__main__":
     function = lambda x: x[0]**3 + x[1]**3
