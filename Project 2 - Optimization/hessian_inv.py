@@ -2,8 +2,6 @@ import numpy as np
 
 def get_inverse_hessian(minimization_problem, xk, xk_1, prev_hessian, hessian_approximation_method = "good_broyden"):
     """
-    
-
     Parameters
     ----------
     minimization_problem : minimization_problem
@@ -52,6 +50,8 @@ def get_inverse_hessian(minimization_problem, xk, xk_1, prev_hessian, hessian_ap
          return DFP(function, gradient, xk, xk_1, prev_hessian)
     elif hessian_approximation_method == "bfgs":
          return BFGS(function, gradient, xk, xk_1, prev_hessian)
+    elif hessian_approximation_method == "brute force":
+        return brute_hessian(function, xk)
     else:
         output = "There is no method called: " + hessian_approximation_method
         raise ValueError(output)
@@ -194,19 +194,18 @@ def BFGS(function, gradient, xk, xk_1, prev_hessian):
 
     '''
     pass
-        
 
 def brute_hessian(function, xk, h = 0.000001):
     '''
     Calculates the approximated inverse Hessian matrix for the probmlem at the
-        specified points xk, using a standards rank 2 approximation.
+        specified points xk, using a simple brute force method
 
     Parameters
     ----------
     function : Lamda function
         The function that should be minimized.
     xk : N-Array
-        An array containing the current coordinates of our Newton method 
+        An array containing the current coordinates of our Newton method
     Returns
     -------
     Returns the approximated inverse Hessian matrix for the probmlem at the
@@ -223,8 +222,9 @@ def brute_hessian(function, xk, h = 0.000001):
         hessian[index] = (function(xk+I+J)+function(xk-I-J) - function(xk-I+J) - function(xk+I-J))/(4*h*h)
         I[index[0]] = 0
         J[index[1]] = 0
-    return hessian
-
+    hessian = 1/2*(hessian + hessian.T)
+    return np.linalg.inv(hessian)
+        
 
 if __name__ == "__main__":
     function = lambda x: x[0]**3 + x[1]**3

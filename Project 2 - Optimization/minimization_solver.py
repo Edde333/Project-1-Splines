@@ -5,6 +5,7 @@ Functions that need to be implemented either in this module or another one.
 """
 
 import numpy as np
+from hessian_inv import get_inverse_hessian
 
 def line_search(x,g,iG,
                 f,
@@ -17,14 +18,14 @@ def line_search(x,g,iG,
     
     return 1.
     
-
+"""
 def get_inverse_Hessian(x,g,iG,
                     f,
                     hessian_approximation_method = "Brute force"):
     
     
     return brute_invHessian(f, x,)
-    
+"""    
           
 
 
@@ -68,7 +69,7 @@ def brute_hessian(f, x, h = 0.000001):
 
 def brute_invHessian(f, x, h = 0.000001):
     hessian = brute_hessian(f, x, h = h)
-    hessian = 1/2(hessian+hessian.T)
+    hessian = 1/2*(hessian+hessian.T)
     return np.linalg.inv(hessian)
 
     
@@ -96,6 +97,23 @@ def inexact_line_search(f, option):
     """
     pass
 
+
+class simple_Problem:
+    
+    def __init__(self, function, guess, gradient = None):
+        self.function = function
+        self.guess = guess
+        if gradient is None:
+            self.gradient = lambda x: brute_gradient(function, x)
+        else :
+            self.gradient = gradient
+        
+            
+
+
+# ACTUAL CLASS AND STUFF!!!!
+
+
 class minimization_solver():
     
     
@@ -106,14 +124,14 @@ class minimization_solver():
                  f = None,
                  guess = None,
                  gradient = None,
-                 hessian_approximation_method = "Brute force",
+                 hessian_approximation_method = "brute force",
                  line_search_method = "None",
                  line_search_conditions = "Goldstein",
                  rho = 0.1,
                  sigma = 0.7,
                  tau = 0.1,
                  chi = 9,
-                 sensitivity = 0.01
+                 sensitivity = 0.000001
                  ):
         
         #Maybe do some checks of the input first
@@ -121,10 +139,10 @@ class minimization_solver():
         
         # Initiate the simple variables
         self.Problem = Problem
-        self.f = f
-        self.x_k = guess
+        #self.f = f
+        self.x_k = Problem.guess
         
-        self.gradient = gradient
+        #self.gradient = gradient
         self.line_search_method = line_search_method
         self.line_search_conditions = line_search_conditions
         self.hessian_approximation_method = hessian_approximation_method
@@ -134,8 +152,8 @@ class minimization_solver():
         self.chi = chi
         self.sensitivity = sensitivity
         
-        self.invHess = brute_hessian(self.f, self.x_k)
-        self.grad = brute_gradient(self.f, self.x_k)
+        #self.invHess = brute_hessian(self.Problem.function, self.x_k)
+        #self.grad = brute_gradient(self.Problem.function, self.x_k)
         
         self.update_methods()
         
@@ -145,13 +163,13 @@ class minimization_solver():
             Updates the methods (gradient, line_seach and inverse_hessian)
             according to the current state of the class
         """
-        if self.gradient is None: 
-            # Shall return a gradient function vf: R^n -> R^n
-            self.gradient = lambda x: brute_gradient(self.f, x)
+        #if self.gradient is None: 
+        #    # Shall return a gradient function vf: R^n -> R^n
+        #    self.gradient = lambda x: brute_gradient(self.f, x)
             
         # Handle the options inserted as strings 
         self.next_alpha = lambda x,g,iG: line_search(x,g,iG,
-                                                     f = self.f,
+                                                     f = self.Problem.function,
                                                      line_search_method = self.line_search_method ,
                                                      line_search_conditions = self.line_search_conditions,
                                                      rho = self.rho,
@@ -160,10 +178,8 @@ class minimization_solver():
                                                      chi = self.chi)
             
         
-        self.next_invHessian = lambda x,g,iG: get_inverse_Hessian(x,g,iG,
-                                                              self.f,
+        self.next_invHessian = lambda xk, xk_i, prev_hessian: get_inverse_hessian(self.Problem, xk, xk_i, prev_hessian,
                                                               hessian_approximation_method =  self.hessian_approximation_method)
-
 
 
     def __call__(self):
@@ -179,34 +195,73 @@ class minimization_solver():
         """
         
         # Initiating variables
-        dx = 2*self.sensitivity # Just set to larger then the sensetivity
         # Create a local variable
-        x_k = self.x_k 
-        invHess = self.invHess.copy()
-        grad = self.grad.copy()
+        xk = self.x_k.copy() 
+        xk_1 = xk.copy() 
+        invHess = get_inverse_hessian(self.Problem.function, xk)
+        prev_hessian = get_inverse_hessian(self.Problem.function, xk)
         
+        # Do first step
+        grad = brute_gradient(self.Problem.function, xk)
+        alpha  = self.next_alpha(xk, grad, invHess)
+        xk = xk - alpha*invHess@grad
+        dx = np.linalg.norm(xk - xk_1)
         while ( dx > self.sensitivity):
             # Calculate inverse hessian, gradiant and alpha
-            invHess  =   self.next_invHessian(x_k,grad, invHess)
-            grad     =   self.gradient(x_k)
-            alpha    =   self.next_alpha(x_k, grad, invHess)
+            invHess  =   self.next_invHessian(xk,xk_1, prev_hessian)
+            grad     =   self.Problem.gradient(xk)
+            alpha    =   self.next_alpha(xk, grad, invHess)
             # update parameters
-            prev_x   =   x_k.copy()
-            x_k      =   x_k - alpha*invHess@grad
-            dx       =   np.linalg.norm(x_k-prev_x)
+            xk_1     =   xk.copy()
+            x_k      =   xk - alpha*invHess@grad
+            dx       =   np.linalg.norm(xk - xk_1)
+            print(xk)
         
-        return x_k
+        return xk
+
+    def parameter_update(self,
+                 Problem = None,
+                 f = None,
+                 guess = None,
+                 gradient = None,
+                 hessian_approximation_method = None,
+                 line_search_method = None,
+                 line_search_conditions = None,
+                 rho = None,
+                 sigma = None,
+                 tau = None,
+                 chi = None,
+                 sensitivity = None
+                 ):
         
+        self.Problem = Problem if Problem is not None else self.Problem
+        self.f = f if f is not None else self.f
+        self.x_k = guess.copy() if guess is not None else self.x_k
+        
+        self.gradient = gradient if gradient is not None else self.gradient
+        self.line_search_method = line_search_method if line_search_method is not None else self.line_search_method
+        self.line_search_conditions = line_search_conditions if line_search_conditions is not None else self.line_search_conditions
+        self.hessian_approximation_method = hessian_approximation_method if hessian_approximation_method is not None else self.hessian_approximation_method
+        self.rho = rho if rho is not None else self.rho
+        self.sigma = sigma if sigma is not None else self.sigma
+        self.tau = tau if tau is not None else self.tau
+        self.chi = chi if chi is not None else self.chi
+        self.sensitivity = sensitivity if sensitivity is not None else self.sensitivity
+        
+        self.invHess = brute_hessian(self.f, self.x_k)
+        self.grad = brute_gradient(self.f, self.x_k)
+        
+        self.update_methods()
 
 if __name__ == '__main__':
-    f = lambda x: x[0]**2+x[1]**2+x[0]*x[1]+12
-    guess = np.array([60,10])
-    
-    ms = minimization_solver("mini", f = f, guess = guess)
+    f = lambda x: x[0]**2+x[1]**2
+    guess = np.array([10,10])
+    prob = simple_Problem(f, guess)
+    ms = minimization_solver(prob)
     
     xp=ms()
     print(xp)
-    
+
    
     
    
