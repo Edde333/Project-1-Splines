@@ -1,4 +1,4 @@
-
+import numpy as np
 
 def get_inverse_hessian(minimization_problem, xk, xk_1, prev_hessian, hessian_approximation_method = "good_broyden"):
     """
@@ -58,7 +58,6 @@ def get_inverse_hessian(minimization_problem, xk, xk_1, prev_hessian, hessian_ap
             
             
             
-            
 
 def good_broyden(function, gradient, xk, xk_1, prev_hessian):
     '''
@@ -84,8 +83,12 @@ def good_broyden(function, gradient, xk, xk_1, prev_hessian):
         specified points xk, and xk_1
 
     '''
+    deltak = xk - xk_1
+    gammak = gradient(xk) - gradient(xk_1)
 
-    pass
+    new_hess = prev_hessian + (np.outer((deltak - prev_hessian@gammak),(prev_hessian@deltak)))/(np.inner((prev_hessian@deltak),gammak))
+    return new_hess
+
 
 def bad_broyden(function, gradient, xk, xk_1, prev_hessian):
     '''
@@ -111,7 +114,11 @@ def bad_broyden(function, gradient, xk, xk_1, prev_hessian):
         specified points xk, and xk_1
 
     '''
-    pass
+    deltak = xk - xk_1
+    gammak = gradient(xk) - gradient(xk_1)
+    
+    new_hess = prev_hessian + np.outer(((deltak - prev_hessian@gammak)/(np.inner(gammak,gammak))),gammak)
+    return new_hess
 
 def symmetric_broyden(function, gradient, xk, xk_1, prev_hessian):
     '''
@@ -191,3 +198,13 @@ def BFGS(function, gradient, xk, xk_1, prev_hessian):
     '''
     pass
         
+
+if __name__ == "__main__":
+    function = lambda x: x[0]**3 + x[1]**3
+    gradient = lambda x: np.array([6*x[0],6*x[1]])
+    xk_1 = np.array([1, 1])
+    xk = np.array([2, 2])
+    prev_hessian = np.array([[6, 0],[0,6]])
+    y = function(xk)
+    new_hessian = good_broyden(function,gradient, xk, xk_1, prev_hessian)
+    print(new_hessian)
