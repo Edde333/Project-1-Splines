@@ -18,7 +18,7 @@ def line_search(x,g,iG,
     return 1.
     
 
-def inverse_Hessian(x,g,iG,
+def get_inverse_Hessian(x,g,iG,
                     f,
                     hessian_approximation_method = "Brute force"):
     
@@ -68,6 +68,7 @@ def brute_hessian(f, x, h = 0.000001):
 
 def brute_invHessian(f, x, h = 0.000001):
     hessian = brute_hessian(f, x, h = h)
+    hessian = 1/2(hessian+hessian.T)
     return np.linalg.inv(hessian)
 
     
@@ -159,7 +160,7 @@ class minimization_solver():
                                                      chi = self.chi)
             
         
-        self.next_invHessian = lambda x,g,iG: inverse_Hessian(x,g,iG,
+        self.next_invHessian = lambda x,g,iG: get_inverse_Hessian(x,g,iG,
                                                               self.f,
                                                               hessian_approximation_method =  self.hessian_approximation_method)
 
