@@ -17,7 +17,5 @@ class minimization_solver():
         self.chi = chi
         
     def solve(self, hessian_approximation_method = "good_broyden", line_search_method = "exact", line_search_conditions = "goldstein"):
-        function = self.minimization_problem.function
-        gradient = self.minimization_problem.gradient
         
         # General Newton method
