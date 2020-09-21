@@ -53,6 +53,8 @@ def get_inverse_hessian(minimization_problem, xk, xk_1, prev_hessian, hessian_ap
          return BFGS(function, gradient, xk, xk_1, prev_hessian)
     elif hessian_approximation_method == "finite_differences":
         return finite_differences(gradient, xk)
+    elif hessian_approximation_method == "brute_inverse_hessian":
+        return brute_inv_hessian(function, xk)
     else:
         output = "There is no method called: " + hessian_approximation_method
         raise ValueError(output)
@@ -256,7 +258,7 @@ def BFGS(function, gradient, xk, xk_1, prev_hessian):
     '''
     pass
 
-def brute_inv_hessian(function, xk, h = 0.000001):
+def brute_inv_hessian(function, xk, h = 0.001):
     '''
     Calculates the approximated inverse Hessian matrix for the probmlem at the
         specified points xk, using a simple brute force method
