@@ -222,7 +222,13 @@ def DFP(function, gradient, xk, xk_1, prev_hessian):
         specified points xk, and xk_1 using the DFP-method.
 
     '''
-    pass
+    deltak = xk - xk_1
+    gammak = gradient(xk) - gradient(xk_1)
+    
+    first_term = (np.outer(deltak,deltak))/(np.inner(deltak,gammak))
+    sec_term = (prev_hessian@np.outer(gammak,gammak@prev_hessian))/(gammak@prev_hessian@gammak)
+    
+    return prev_hessian + first_term - sec_term
 
 def BFGS(function, gradient, xk, xk_1, prev_hessian):
     '''
@@ -258,5 +264,5 @@ if __name__ == "__main__":
     xk = np.array([2, 2, 2])
     prev_hessian = np.array([[6, 0, 0],[0,6, 0],[0,0,6]])
     y = function(xk)
-    new_hessian = symmetric_broyden(function,gradient, xk, xk_1, prev_hessian)
+    new_hessian = DFP(function,gradient, xk, xk_1, prev_hessian)
     print(new_hessian)
