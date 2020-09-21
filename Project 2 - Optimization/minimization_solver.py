@@ -5,13 +5,14 @@ from minimization_problem import minimization_problem
 
 class minimization_solver():
 
-    def __init__(self, minimization_problem, hessian_approximation_method = "good_broyden",
+    def __init__(self, minimization_problem, hessian_approximation_method = "brute_inverse_hessian",
                                              line_search_method = "exact",
                                              line_search_conditions = "goldstein",
                                              rho = 0.1,
                                              sigma = 0.7,
                                              tau = 0.1,
-                                             chi = 9):
+                                             chi = 9,
+                                             sensitivity =0.01):
         """
         Initializes a solver.
 
@@ -41,6 +42,7 @@ class minimization_solver():
         self.sigma = sigma
         self.tau = tau
         self.chi = chi
+        self.sensitivity = sensitivity
 
     # For changing attributes
     def parameter_update(self,
@@ -92,7 +94,7 @@ class minimization_solver():
         # Create a local variable
         xk = self.minimization_problem.guess.copy()
         xk_1 = xk.copy()
-        inv_hessian = get_inverse_hessian(self.minimization_problem, xk, None, None, hessian_approximation_method = "finite_differences")
+        inv_hessian = get_inverse_hessian(self.minimization_problem, xk, None, None, hessian_approximation_method = "brute_inverse_hessian")
 
         # Do first step
         grad = self.minimization_problem.gradient(xk)
@@ -115,8 +117,9 @@ class minimization_solver():
 
 
 if __name__ == '__main__':
-    f = lambda x: x[0]**2+x[1]**2
-    guess = np.array([1,2])
+    f = lambda x: x[0]**2+5*x[1]**2+23+10*x[1]
+    guess = np.array([12,20])
     problem = minimization_problem(f,guess)
     solver = minimization_solver(problem)
-    solver.solve()
+    x = solver.solve()
+    print(x)
