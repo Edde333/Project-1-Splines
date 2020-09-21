@@ -134,7 +134,6 @@ def good_broyden(function, gradient, xk, xk_1, prev_hessian):
     '''
     deltak = xk - xk_1
     gammak = gradient(xk) - gradient(xk_1)
-
     new_hess = prev_hessian + (np.outer((deltak - prev_hessian@gammak),(prev_hessian@deltak)))/(np.inner((prev_hessian@deltak),gammak))
     return new_hess
 
@@ -280,10 +279,15 @@ def brute_inv_hessian(function, xk, h = 0.001):
     for index in np.ndindex(hessian.shape):
         I[index[0]] = h
         J[index[1]] = h
-        hessian[index] = (function(xk+I+J)+function(xk-I-J) - function(xk-I+J) - function(xk+I-J))/(4*h*h)
+        hessian[index] = (function(xk+I+J) + function(xk-I-J) - function(xk-I+J) - function(xk+I-J))/(4*h*h)
         I[index[0]] = 0
         J[index[1]] = 0
     hessian = 1/2*(hessian + hessian.T)
+        # checks that hessian is positive definite
+    try:
+        np.linalg.cholesky(hessian)
+    except np.linalg.LinAlgError:
+        raise Exception("Hessian matrix not positive definite")
     inv_hessian = np.linalg.inv(hessian)
     return inv_hessian
 
