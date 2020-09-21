@@ -1,6 +1,6 @@
 import numpy as np
 
-def get_inverse_hessian(function, gradient, xk, xk_1, prev_hessian, hessian_approximation_method = "good_broyden"):
+def get_inverse_hessian(minimization_problem, xk, xk_1, prev_hessian, hessian_approximation_method = "good_broyden"):
     """
 
     Parameters
@@ -38,7 +38,9 @@ def get_inverse_hessian(function, gradient, xk, xk_1, prev_hessian, hessian_appr
         specified points xk, and xk_1
 
     """
-    
+    function = minimization_problem.function
+    gradient = minimization_problem.gradient
+
     if hessian_approximation_method == "good_broyden":
         return good_broyden(function, gradient, xk, xk_1, prev_hessian)
     elif hessian_approximation_method == "bad_broyden":
