@@ -59,10 +59,10 @@ def line_search(f, g, xk, sk, line_search_method = "exact", line_search_conditio
             a0k = (np.add(xk, a0 * sk))
             aLk = (np.add(xk, aL * sk))
 
-            fa0 = f(a0k[0], a0k[1])
-            faL = f(aLk[0], aLk[1])
-            ga0 = g(a0k[0], a0k[1]).T @ sk
-            gaL = g(aLk[0], aLk[1]).T @ sk
+            fa0 = f(a0k)
+            faL = f(aLk)
+            ga0 = g(a0k).T @ sk
+            gaL = g(aLk).T @ sk
             
             
 
