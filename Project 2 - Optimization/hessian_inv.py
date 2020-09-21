@@ -13,8 +13,8 @@ def get_inverse_hessian(minimization_problem, xk, xk_1, prev_hessian, hessian_ap
     xk_1 : N-array
         An array containing the previous coordinates of our Newton method
     prev_hessian: NxN-array
-        The previous inverse hessian matrix. 
-    hessian_approximation_method : String, optional        
+        The previous inverse hessian matrix.
+    hessian_approximation_method : String, optional
         A string specifying the type of hessian inversion method which will be
         used. Valid values of this parameters are:
             * 'good_broyden'
@@ -22,13 +22,13 @@ def get_inverse_hessian(minimization_problem, xk, xk_1, prev_hessian, hessian_ap
             * 'symmetric_broyden'
             * 'dfp'
             * 'bfgs'
-            
+
         The default is "good_broyden".
 
     Raises
     ------
     ValueError
-        Raises a ValueError if an invalid method is specified in 
+        Raises a ValueError if an invalid method is specified in
         hessian_approximation_method.
 
     Returns
@@ -56,9 +56,9 @@ def get_inverse_hessian(minimization_problem, xk, xk_1, prev_hessian, hessian_ap
     else:
         output = "There is no method called: " + hessian_approximation_method
         raise ValueError(output)
-            
-            
-            
+
+
+
 def finite_differences(gradient, x):
     """
     Parameters
@@ -81,7 +81,7 @@ def finite_differences(gradient, x):
         Returns the approximated inverse Hessian matrix for the problem at
         the specified point x
 
-    """     
+    """
     dim = len(gradient)
     dx = 1e-6
     hessian = np.zeros(dim**2).reshape(dim,dim)
@@ -90,20 +90,20 @@ def finite_differences(gradient, x):
             # creates array used for difference calculation
             pc = np.zeros(dim)
             pc[j] = dx
-            
+
             # carries out derivation
             deriv = (gradient[i](x + pc) - gradient[i](x - pc)) / (2 * dx)
-            
+
             # constructs hessian
             hessian[i,j] = deriv
             hessian[j,i] = deriv
-    
+
     # checks that hessian is positive definite
     try:
         np.linalg.cholesky(hessian)
     except np.linalg.LinAlgError:
         raise Exception("Hessian matrix not positive definite")
-        
+
     return np.linalg.inv(hessian)
 
 def good_broyden(function, gradient, xk, xk_1, prev_hessian):
@@ -122,8 +122,8 @@ def good_broyden(function, gradient, xk, xk_1, prev_hessian):
     xk_1 : N-array
         An array containing the previous coordinates of our Newton method
     prev_hessian : NxN-array
-        The previous hessian matrix.    
-        
+        The previous hessian matrix.
+
     Returns
     -------
     Returns the approximated inverse Hessian matrix for the probmlem at the
@@ -153,7 +153,7 @@ def bad_broyden(function, gradient, xk, xk_1, prev_hessian):
     xk_1 : N-array
         An array containing the previous coordinates of our Newton method
     prev_hessian : NxN-array
-        The previous hessian matrix.    
+        The previous hessian matrix.
 
     Returns
     -------
@@ -163,7 +163,7 @@ def bad_broyden(function, gradient, xk, xk_1, prev_hessian):
     '''
     deltak = xk - xk_1
     gammak = gradient(xk) - gradient(xk_1)
-    
+
     new_hess = prev_hessian + np.outer(((deltak - prev_hessian@gammak)/(np.inner(gammak,gammak))),gammak)
     return new_hess
 
@@ -183,8 +183,8 @@ def symmetric_broyden(function, gradient, xk, xk_1, prev_hessian):
     xk_1 : N-array
         An array containing the previous coordinates of our Newton method
     prev_hessian : NxN-array
-        The previous hessian matrix.    
-        
+        The previous hessian matrix.
+
     Returns
     -------
     Returns the approximated inverse Hessian matrix for the probmlem at the
@@ -214,8 +214,8 @@ def DFP(function, gradient, xk, xk_1, prev_hessian):
     xk_1 : N-array
         An array containing the previous coordinates of our Newton method
     prev_hessian : NxN-array
-        The previous hessian matrix.    
-        
+        The previous hessian matrix.
+
     Returns
     -------
     Returns the approximated inverse Hessian matrix for the probmlem at the
@@ -224,10 +224,10 @@ def DFP(function, gradient, xk, xk_1, prev_hessian):
     '''
     deltak = xk - xk_1
     gammak = gradient(xk) - gradient(xk_1)
-    
+
     first_term = (np.outer(deltak,deltak))/(np.inner(deltak,gammak))
     sec_term = (prev_hessian@np.outer(gammak,gammak@prev_hessian))/(gammak@prev_hessian@gammak)
-    
+
     return prev_hessian + first_term - sec_term
 
 def BFGS(function, gradient, xk, xk_1, prev_hessian):
@@ -246,7 +246,7 @@ def BFGS(function, gradient, xk, xk_1, prev_hessian):
     xk_1 : N-array
         An array containing the previous coordinates of our Newton method
     prev_hessian : NxN-array
-        The previous hessian matrix.    
+        The previous hessian matrix.
 
     Returns
     -------
@@ -255,7 +255,36 @@ def BFGS(function, gradient, xk, xk_1, prev_hessian):
 
     '''
     pass
-        
+
+def brute_inv_hessian(function, xk, h = 0.000001):
+    '''
+    Calculates the approximated inverse Hessian matrix for the probmlem at the
+        specified points xk, using a simple brute force method
+    Parameters
+    ----------
+    function : Lamda function
+        The function that should be minimized.
+    xk : N-Array
+        An array containing the current coordinates of our Newton method
+    Returns
+    -------
+    Returns the approximated inverse Hessian matrix for the probmlem at the
+        specified points xk, and xk_1 using the BFGS-method
+    '''
+    input_dim = xk.size
+    hessian = np.empty( ( input_dim, input_dim))
+    I =np.zeros(input_dim)
+    J = np.zeros( input_dim)
+    for index in np.ndindex(hessian.shape):
+        I[index[0]] = h
+        J[index[1]] = h
+        hessian[index] = (function(xk+I+J)+function(xk-I-J) - function(xk-I+J) - function(xk+I-J))/(4*h*h)
+        I[index[0]] = 0
+        J[index[1]] = 0
+    hessian = 1/2*(hessian + hessian.T)
+    inv_hessian = np.linalg.inv(hessian)
+    return inv_hessian
+
 
 if __name__ == "__main__":
     function = lambda x: x[0]**3 + x[1]**3 + x[2]**3
