@@ -56,16 +56,7 @@ def line_search(f, g, xk, sk, line_search_method = "exact", line_search_conditio
         [LC, RC] = get_conditions(line_search_condition, a0, aL, aU, rho, sigma, tau, chi, fa0, faL, ga0, gaL)
         
         while not (LC and RC):
-            a0k = (np.add(xk, a0 * sk))
-            aLk = (np.add(xk, aL * sk))
-
-            fa0 = f(a0k)
-            faL = f(aLk)
-            ga0 = g(a0k).T @ sk
-            gaL = g(aLk).T @ sk
-            
-            
-
+           
             if not LC:
                 da0 = extrapolate(a0, aL, ga0, gaL)
                 da0 = max(da0, tau * (a0 - aL))
@@ -80,6 +71,14 @@ def line_search(f, g, xk, sk, line_search_method = "exact", line_search_conditio
                 abar = min(a0, aU - tau * (aU - aL))
                 a0 = abar
             
+            a0k = (np.add(xk, a0 * sk))
+            aLk = (np.add(xk, aL * sk))
+
+            fa0 = f(a0k)
+            faL = f(aLk)
+            ga0 = g(a0k).T @ sk
+            gaL = g(aLk).T @ sk
+                        
             [LC, RC] = get_conditions(line_search_condition, a0, aL, aU, rho, sigma, tau, chi, fa0, faL, ga0, gaL)
         
         return a0
