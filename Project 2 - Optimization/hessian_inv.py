@@ -256,7 +256,6 @@ def BFGS(function, gradient, xk, xk_1, prev_hessian):
         specified points xk, and xk_1 using the BFGS-method
 
     '''
-<<<<<<< HEAD
     deltak = xk - xk_1
     gammak = gradient(xk) - gradient(xk_1)
     
@@ -266,8 +265,6 @@ def BFGS(function, gradient, xk, xk_1, prev_hessian):
 
     return prev_hessian + first_term*sec_term - third_term 
 
-=======
-    pass
 
 def brute_inv_hessian(function, xk, h = 0.001):
     '''
@@ -297,7 +294,7 @@ def brute_inv_hessian(function, xk, h = 0.001):
     hessian = 1/2*(hessian + hessian.T)
     inv_hessian = np.linalg.inv(hessian)
     return inv_hessian
->>>>>>> 1a50c87bb069d99ff67d825693c73e3a5bc0cf57
+
 
 
 if __name__ == "__main__":
