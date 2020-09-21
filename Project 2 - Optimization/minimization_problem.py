@@ -49,9 +49,9 @@ class minimization_problem():
             except ValueError:
                 raise ValueError("'Guess' is not a compatible input to the gradient")  
             
-    # For changing attributes
-    def __call__():
-        pass
+    # For changing guess
+    def __call__(self, guess):
+        self.guess = guess
     
     def get_gradient(self, x):
         dx = 1e-6

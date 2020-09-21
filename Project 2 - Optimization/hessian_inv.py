@@ -83,22 +83,17 @@ def finite_differences(gradient, x):
         Returns the approximated inverse Hessian matrix for the problem at
         the specified point x
 
-    """
-    dim = len(gradient)
+    """     
+    dim = len(x)
     dx = 1e-6
     hessian = np.zeros(dim**2).reshape(dim,dim)
-    for i in range(dim): #row
-        for j in range(i,dim): #column
-            # creates array used for difference calculation
-            pc = np.zeros(dim)
-            pc[j] = dx
-
-            # carries out derivation
-            deriv = (gradient[i](x + pc) - gradient[i](x - pc)) / (2 * dx)
-
-            # constructs hessian
-            hessian[i,j] = deriv
-            hessian[j,i] = deriv
+    # array used for difference calculation
+    pc = np.identity(dim) * dx
+    for i in range(dim):
+        # carries out derivation
+        hessian[i] = (gradient(x + pc[i]) - gradient(x - pc[i])) / (2 * dx)
+        for j in range(i):
+            hessian[i,j] = hessian[j,i] 
 
     # checks that hessian is positive definite
     try:
@@ -302,10 +297,10 @@ def brute_inv_hessian(function, xk, h = 0.001):
 
 
 if __name__ == "__main__":
-    function = lambda x: x[0]**3 + x[1]**3 + x[2]**3
-    gradient = lambda x: np.array([6*x[0],6*x[1],6*x[2]])
+    function = lambda x: x[0]**3 * x[1] + x[1]**3 + x[2]**3
+    gradient = lambda x: np.array([3*x[0]**2, 3*x[1]**2,3*x[2]**2])
     xk_1 = np.array([1, 1, 1])
-    xk = np.array([2, 2, 2])
+    xk = np.array([3, 2, 1])
     prev_hessian = np.array([[6, 0, 0],[0,6, 0],[0,0,6]])
     y = function(xk)
     new_hessian = BFGS(function,gradient, xk, xk_1, prev_hessian)
