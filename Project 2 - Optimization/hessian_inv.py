@@ -260,7 +260,7 @@ def BFGS(function, gradient, xk, xk_1, prev_hessian):
     return prev_hessian + first_term*sec_term - third_term 
 
 
-def brute_inv_hessian(function, xk, h = 0.001):
+def brute_inv_hessian(function, xk, h = 0.0001):
     '''
     Calculates the approximated inverse Hessian matrix for the probmlem at the
         specified points xk, using a simple brute force method

@@ -1,6 +1,6 @@
 import numpy as np
 from hessian_inv import get_inverse_hessian
-#from line_search import line_search
+from line_search import line_search
 from minimization_problem import minimization_problem
 
 class minimization_solver():
@@ -115,15 +115,28 @@ class minimization_solver():
 
         # Do first step
         grad = self.minimization_problem.gradient(xk)
-        #alpha  = line_search(...)
-        alpha  = 1.
+        alpha =      line_search(self.minimization_problem.function,
+                                 self.minimization_problem.gradient,
+                                 xk,
+                                 -inv_hessian@grad,
+                                 line_search_method = self.line_search_method,
+                                 line_search_condition = self.line_search_conditions, 
+                                 a0 = 1, rho = 0.1, sigma = 0.7, tau = 0.1, chi = 9)
         xk = xk - alpha*inv_hessian@grad
         dx = np.linalg.norm(xk - xk_1)
         while ( dx > self.sensitivity):
             # Calculate inverse hessian, gradiant and alpha
-            inv_hessian  =   get_inverse_hessian(self.minimization_problem, xk, xk_1, inv_hessian, self.hessian_approximation_method)
+            inv_hessian  =   get_inverse_hessian(self.minimization_problem,
+                                                 xk, xk_1, inv_hessian,
+                                                 self.hessian_approximation_method)
             grad     =   self.minimization_problem.gradient(xk)
-            #alpha  = line_search(...)
+            alpha  = line_search(self.minimization_problem.function,
+                                 self.minimization_problem.gradient,
+                                 xk,
+                                 -inv_hessian@grad,
+                                 line_search_method = self.line_search_method,
+                                 line_search_condition = self.line_search_conditions, 
+                                 a0 = 1, rho = self.rho, sigma = self.sigma, tau = self.tau, chi = self.chi)
             alpha    =   1.
             # update parameters
             xk_1     =   xk
@@ -135,8 +148,8 @@ class minimization_solver():
 
 if __name__ == '__main__':
     import math
-    f = lambda x: x[0]**2+x[1]**2+x[1]
-    guess = np.array([12,20])
+    f = lambda x: x[0]*math.sin(x[0])
+    guess = np.array([3.])
     problem = minimization_problem(f,guess)
     solver = minimization_solver(problem)
     solver.parameter_update(hessian_approximation_method="good_broyden")
