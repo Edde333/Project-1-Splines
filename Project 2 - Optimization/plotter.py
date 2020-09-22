@@ -2,11 +2,13 @@ import matplotlib.pyplot as plt
 import sys
 import numpy as np
 
-def plot_newton_2d(function, points, levels = None):
+def plot_newton_2d(axis, function, points, levels = None):
     """
     
     Parameters
     ----------
+    axis : plot-axis
+        The axis on which you want the plot to show
     function : Python function from R^2 to R that takes an array of length
         2 as its argument.
         The function on which you want to find a minimum.
@@ -59,7 +61,7 @@ def plot_newton_2d(function, points, levels = None):
     
     if levels == None:
         levels = 49
-    plt.contour(X, Y, Z, levels, colors=['black'], alpha= 0.8, linewidths = 1)
+    axis.contour(X, Y, Z, levels, colors=['black'], alpha= 0.8, linewidths = 1)
     
     p_x = []
     p_y = []
@@ -67,7 +69,7 @@ def plot_newton_2d(function, points, levels = None):
         p_x.append(p[0])
         p_y.append(p[1])
         
-    plt.plot(p_x, p_y, marker="o", color="red", linestyle="dotted", linewidth = 2, markersize=4)
+    axis.plot(p_x, p_y, marker="o", color="red", linestyle="dotted", linewidth = 2, markersize=4)
         
    
 if __name__ == "__main__":
@@ -75,4 +77,6 @@ if __name__ == "__main__":
     f = lambda x: (1-x[0])**2 + 100*(x[1]-x[0]**2)**2
     points = [np.array([-1/2,-1]), np.array([1,2]), np.array([1.5,3])]
     levels = [1, 3.8, 14, 56, 215, 825]
-    plot_newton_2d(f, points, levels)
+    fig, (ax1, ax2) = plt.subplots(1, 2)
+    plot_newton_2d(ax1, f, points, levels)
+    plot_newton_2d(ax2, f, [np.array([1,2]), np.array([3,4])], levels)
