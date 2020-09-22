@@ -46,6 +46,7 @@ class minimization_problem():
             # Checks that guess is applicable to the gradient
             try:
                 gradient(guess)
+                self.gradient = gradient
             except ValueError:
                 raise ValueError("'Guess' is not a compatible input to the gradient")  
             
