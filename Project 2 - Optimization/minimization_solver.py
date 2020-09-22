@@ -86,7 +86,7 @@ class minimization_solver():
         self.chi                             = chi                           if chi is not None else self.chi
         self.sensitivity                     = sensitivity                   if sensitivity is not None else self.sensitivity
 
-    def solve(self):
+    def solve(self, tracking_names= []):
         """
 
         Parameters
@@ -107,13 +107,15 @@ class minimization_solver():
             The algoritms choice as a minimum point.
 
         """
+        tracker = {name : [] for name in tracking_names}
         # Initiating variables
         # Create a local variable
-        X = []
         xk = self.minimization_problem.guess.copy()
         xk_1 = xk.copy()
         inv_hessian = get_inverse_hessian(self.minimization_problem, xk, None, None, hessian_approximation_method = "finite_differences")
-        print("\n\n \n aasdsadsdadasdas\n\n\n")
+        # Save initial values
+        for name,l in tracker.items(): l.append(locals()[name].copy())
+        
         # Do first step
         grad = self.minimization_problem.gradient(xk)
         alpha =      line_search(self.minimization_problem.function,
@@ -125,8 +127,10 @@ class minimization_solver():
                                  a0 = 1, rho = 0.1, sigma = 0.7, tau = 0.1, chi = 9)
         xk = xk - alpha*inv_hessian@grad
         dx = np.linalg.norm(xk - xk_1)
-        X.append(xk_1)
-        X.append(xk)
+        
+        # Save first step values
+        for name,l in tracker.items(): l.append(locals()[name].copy())    
+            
         while ( dx > self.sensitivity):
             # Calculate inverse hessian, gradiant and alpha
             inv_hessian  =   get_inverse_hessian(self.minimization_problem,
@@ -145,18 +149,21 @@ class minimization_solver():
             xk_1     =   xk
             xk       =   xk - alpha*inv_hessian@grad
             dx       =   np.linalg.norm(xk - xk_1)
-            X.append(xk)
-
-        return xk, X
+            # Save values
+            for name,l in tracker.items(): l.append(locals()[name].copy())
+        
+        if tracker == {}: return xk
+        return xk, tracker
 
 
 if __name__ == '__main__':
     import math
-    f = lambda x: x[0]*math.sin(x[0])
-    guess = np.array([3.2])
+    f = lambda x: x[0]**2+x[1]**2
+    guess = np.array([1.,1])
     problem = minimization_problem(f,guess)
     solver = minimization_solver(problem)
     solver.parameter_update(hessian_approximation_method="good_broyden",
                             line_search_method = "inexact",)
-    x,X = solver.solve()
-    print(X)
+    names = ['xk', 'inv_hessian']
+    x,tracker = solver.solve(names)
+    print(tracker)
