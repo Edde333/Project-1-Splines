@@ -96,12 +96,13 @@ def finite_differences(gradient, x):
             hessian[i,j] = hessian[j,i] 
     # checks that hessian is positive definite
     try:
-        np.linalg.cholesky(hessian)
+        # np.linalg.cholesky(hessian)  MADE CHANGES HEREEEEEEE!
+        return np.linalg.inv(hessian)
     except np.linalg.LinAlgError:
         print("ASDASDASSASADS")
         print(hessian)
         raise Exception("Hessian matrix not positive definite")
-    return np.linalg.inv(hessian)
+    #return np.linalg.inv(hessian) COMMENTED HEREEEEE
 
 def good_broyden(function, gradient, xk, xk_1, prev_hessian):
     '''
