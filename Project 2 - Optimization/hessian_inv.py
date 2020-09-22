@@ -295,6 +295,15 @@ def brute_inv_hessian(function, xk, h = 0.0001):
     return inv_hessian
 
 
+def get_accaptable_hessian_approximation_methods():
+    accaptable_list = [ "good_broyden",
+            "bad_broyden",
+            "symmetric_broyden",
+            "dfp",
+            "bfgs",
+            "finite_differences",
+            "brute_inverse_hessian"]
+    return accaptable_list
 
 if __name__ == "__main__":
     function = lambda x: x[0]**3 * x[1] + x[1]**3 + x[2]**3
