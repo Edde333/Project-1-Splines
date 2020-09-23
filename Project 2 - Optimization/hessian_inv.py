@@ -99,8 +99,6 @@ def finite_differences(gradient, x):
         # np.linalg.cholesky(hessian)  MADE CHANGES HEREEEEEEE!
         return np.linalg.inv(hessian)
     except np.linalg.LinAlgError:
-        print("ASDASDASSASADS")
-        print(hessian)
         raise Exception("Hessian matrix not positive definite")
     #return np.linalg.inv(hessian) COMMENTED HEREEEEE
 

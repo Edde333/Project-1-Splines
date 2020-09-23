@@ -28,13 +28,14 @@ a0 : float
 """
 def line_search(f, g, xk, sk, line_search_method = "exact", line_search_condition = "goldstein", 
                 a0 = 100, rho = 0.1, sigma = 0.7, tau = 0.1, chi = 9):
+    if line_search_method == 'none':
+        return 1.
     
-    
-    if line_search_method == "exact":
+    elif line_search_method == "exact":
         fa = lambda a: f(np.add(xk, a * sk))    
         alpha = sp.optimize.fmin(fa, 0)
 
-        return (alpha)
+        return alpha
             
               
 

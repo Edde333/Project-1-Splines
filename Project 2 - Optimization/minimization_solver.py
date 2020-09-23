@@ -9,14 +9,14 @@ import sys
 class minimization_solver():
 
     def __init__(self, minimization_problem,
-                 hessian_approximation_method   =  "good_broyden",
+                 hessian_approximation_method   =  "finite_differences",
                  line_search_method             =  "exact",
                  line_search_conditions         =  "goldstein",
                  rho    =  0.1,
                  sigma  =  0.7,
                  tau    =  0.1,
                  chi    =  9.,
-                 sensitivity  =  0.0001):
+                 sensitivity  =  0.1):
         """
         Initializes a solver.
 
@@ -164,8 +164,9 @@ class minimization_solver():
             for name,l in tracker.items(): l.append(locals()[name].copy())
             
             # Check if condition is reached
-            if dx <   self.sensitivity: break
-            #if np.linalg.norm(grad) < self.sensitivity: break
+            #if dx <   self.sensitivity: break
+            if np.linalg.norm(grad) < self.sensitivity: break
+            #if abs(self.minimization_problem.function(xk)- self.minimization_problem.function(xk_1)) < self.sensitivity: break
         
         return xk, tracker
     
