@@ -67,7 +67,7 @@ def line_search(f, g, xk, sk, line_search_method = "exact", line_search_conditio
     
     elif line_search_method == "exact":
         fa = lambda a: f(np.add(xk, a * sk))    
-        alpha = sp.optimize.fmin(fa, 0)
+        alpha = sp.optimize.fmin(fa, 0, disp=False)
 
         return alpha
             
