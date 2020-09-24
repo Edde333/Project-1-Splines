@@ -206,7 +206,7 @@ class minimization_solver():
         """               
    
 if __name__ == '__main__':
-    f = lambda x: x[0]**2+(x[1]-x[0]*3)**2
+    f = lambda x: x[0]**2+(x[1]-x[0]**3)**2
     guess = np.array([1,1])
     problem = minimization_problem(f,guess)
     solver = minimization_solver(problem)
@@ -216,4 +216,3 @@ if __name__ == '__main__':
     names = ['xk', 'inv_hessian', 'xk_1']
     x,tracker = solver.solve(names)
     plot_newton_2d(f, tracker['xk'])
-    plot_newton_2d(f, [np.array([1,1.2]), np.array([0,0])])

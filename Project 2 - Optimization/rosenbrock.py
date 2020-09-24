@@ -24,7 +24,7 @@ def check_rosenbrock(guess,
     
     fig, (ax1, ax2) = plt.subplots(1, 2)
     ax1.set_title("Exact line search")
-    plot_newton_2d(ax1, rosenbrock, points, levels)
+    plot_newton_2d(rosenbrock, points, levels, ax1)
     print("Exact line search, minimum at: ", res)
     
     # Task 7 - Rosenbrock with classical Newton and inexakt line search
@@ -33,7 +33,7 @@ def check_rosenbrock(guess,
     res, points = ms.solve(['xk'])
     points = points.get('xk')
     ax2.set_title("Inexact line search")
-    plot_newton_2d(ax2, rosenbrock, points, levels)
+    plot_newton_2d(rosenbrock, points, levels, ax2)
     print("Inexact line serach, minimum at: ", res)
     
 if __name__ == "__main__":
