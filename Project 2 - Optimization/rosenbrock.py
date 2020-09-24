@@ -5,7 +5,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 
 def check_rosenbrock(guess,
-                     hessian_approximation_method = "finite_differences"):
+                     hessian_approximation_method = "finite_differences",
+                     sensitivity = 0.01):
     
     # Task 5 - Rosenbrock with classical Newton and exact line search
     rosenbrock = lambda x: (1-x[0])**2 + 100*(x[1]-x[0]**2)**2
@@ -14,16 +15,13 @@ def check_rosenbrock(guess,
     mp = minimization_problem(rosenbrock, guess, rosenbrock_grad)
     
     ms = minimization_solver(mp, hessian_approximation_method, "exact",
-                             #sensitivity = 0.001,
-                             #sigma = 0.1,
-                             #rho = 0.01
-                             )
+                             sensitivity = sensitivity)
     res, points = ms.solve(['xk'])
     points = points.get('xk')
     levels = [1, 3.8, 14, 56, 215, 825]
     
-    fig, (ax1, ax2) = plt.subplots(1, 2)
-    ax1.set_title("Exact line search")
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3)
+    ax1.set_title("Exact")
     plot_newton_2d(rosenbrock, points, levels, ax1)
     print("Exact line search, minimum at: ", res)
     
@@ -32,9 +30,16 @@ def check_rosenbrock(guess,
     ms.parameter_update(line_search_method="inexact")
     res, points = ms.solve(['xk'])
     points = points.get('xk')
-    ax2.set_title("Inexact line search")
+    ax2.set_title("Goldstein")
     plot_newton_2d(rosenbrock, points, levels, ax2)
-    print("Inexact line serach, minimum at: ", res)
+    print("Inexact line serach with Goldstein conditions, minimum at: ", res)
+    
+    ms.parameter_update(line_search_conditions="WP")
+    res, points = ms.solve(['xk'])
+    points = points.get('xk')
+    ax3.set_title("Wolfe-Powell")
+    plot_newton_2d(rosenbrock, points, levels, ax3)
+    print("Inexact line serach with Wolfe-Powell conditions, minimum at: ", res)
     
 if __name__ == "__main__":
     guess = np.array([0, -0.7])
