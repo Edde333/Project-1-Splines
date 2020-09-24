@@ -4,6 +4,7 @@ from line_search import line_search
 from minimization_problem import minimization_problem
 import matplotlib.pyplot as plt
 import sys
+from plotter import plot_newton_2d
 
 
 class minimization_solver():
@@ -202,82 +203,17 @@ class minimization_solver():
         tau    =  0.1,
         chi    =  9.,
         sensitivity  =  0.01
-        """
-       
-    def plot_newton_2d(self, points, levels = None):
-        
-        """
-        Parameters
-        ----------
-        points : (Nx2)-array
-            The recursive points that you wish to plot.
-        levels : array-like, optional
-            An array with the (increasing) levels that the contour plot
-            is drawing. If not specified 50 equally spaced (value-wise)
-            contours are drawn. Default is None.
-    
-        Returns
-        -------
-        None.
-    
-        """
-        function = self.minimization_problem.function
-        # Define range
-        x_min = sys.float_info.max
-        y_min = sys.float_info.max
-        
-        x_max = sys.float_info.min
-        y_max = sys.float_info.min
-        
-        for p in points:
-            if p[0] < x_min:
-                x_min = p[0]
-            if p[0] > x_max:
-                x_max = p[0]
-            
-            if p[1] < y_min:
-                y_min = p[1]
-            if p[1] > y_max:
-                y_max = p[1]
-                
-        x_range = x_max - x_min
-        x_max += x_range/3
-        x_min -= x_range/3
-        
-        y_range = y_max - y_min
-        y_max += y_range/3
-        y_min -= y_range/3
-        
-        # Create grid
-        delta = 0.025
-        x = np.arange(x_min, x_max, delta)
-        y = np.arange(y_min, y_max, delta)
-        X,Y = np.meshgrid(x,y)
-        Z = function([X,Y])
-       
-        
-        if levels == None:
-            levels = 49
-        plt.contour(X, Y, Z, levels, colors=['black'], alpha= 0.8, linewidths = 1)
-        
-        p_x = []
-        p_y = []
-        for p in points:
-            p_x.append(p[0])
-            p_y.append(p[1])
-            
-        plt.plot(p_x, p_y, marker="o", color="red", linestyle="dotted", linewidth = 2, markersize=4)
-        plt.show()
-                
+        """               
    
 if __name__ == '__main__':
-    import math
-    f = lambda x: x[0]**2+x[1]**2
-    guess = np.array([3.8,8])
+    f = lambda x: x[0]**2+(x[1]-x[0]*3)**2
+    guess = np.array([1,1])
     problem = minimization_problem(f,guess)
     solver = minimization_solver(problem)
-    solver.parameter_update(hessian_approximation_method="good_broyden",
-                            line_search_method = "inexact",)
+    solver.parameter_update(hessian_approximation_method="bfgs",
+                            line_search_method = "inexact",
+                            sensitivity = 0.001)
     names = ['xk', 'inv_hessian', 'xk_1']
     x,tracker = solver.solve(names)
-    solver.plot_newton_2d(tracker['xk'])
+    plot_newton_2d(f, tracker['xk'])
+    plot_newton_2d(f, [np.array([1,1.2]), np.array([0,0])])
