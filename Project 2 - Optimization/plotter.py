@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import sys
 import numpy as np
 
-def plot_newton_2d(function, points, levels = None, axis = None):
+def plot_newton_2d(function, points, levels = None, axes = None):
     """
     
     Parameters
@@ -16,8 +16,8 @@ def plot_newton_2d(function, points, levels = None, axis = None):
         An array with the (increasing) levels that the contour plot
         is drawing. If not specified 50 equally spaced (value-wise)
         contours are drawn. Default is None.
-    axis : plot-axis, optional
-        The axis on which you want the plot to show. If not specified,
+    axes : plot-axes, optional
+        The axes on which you want the plot to show. If not specified,
         it plots the standard way.
 
     Returns
@@ -71,8 +71,8 @@ def plot_newton_2d(function, points, levels = None, axis = None):
     # Plot contours
     if levels == None:
         levels = 49
-    if axis != None:
-        axis.contour(X, Y, Z, levels, colors=['black'], alpha= 0.8, linewidths = 1)
+    if axes != None:
+        axes.contour(X, Y, Z, levels, colors=['black'], alpha= 0.8, linewidths = 1)
     else:
         plt.cla()
         plt.contour(X, Y, Z, levels, colors=['black'], alpha= 0.8, linewidths = 1)
@@ -83,8 +83,8 @@ def plot_newton_2d(function, points, levels = None, axis = None):
     for p in points:
         p_x.append(p[0])
         p_y.append(p[1])
-    if axis != None:
-        axis.plot(p_x, p_y, marker="o", color="red", linestyle="dotted", linewidth = 2, markersize=4)
+    if axes != None:
+        axes.plot(p_x, p_y, marker="o", color="red", linestyle="dotted", linewidth = 2, markersize=4)
     else:
         plt.plot(p_x, p_y, marker="o", color="red", linestyle="dotted", linewidth = 2, markersize=4)
 
