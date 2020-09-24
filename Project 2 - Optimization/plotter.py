@@ -87,7 +87,8 @@ def plot_newton_2d(function, points, levels = None, axis = None):
         axis.plot(p_x, p_y, marker="o", color="red", linestyle="dotted", linewidth = 2, markersize=4)
     else:
         plt.plot(p_x, p_y, marker="o", color="red", linestyle="dotted", linewidth = 2, markersize=4)
-
+    
+    plt.show()
     
 if __name__ == "__main__":
     # Rosenbrock f(x,y) = (1-x)^2 + 100(y-x^2)^2

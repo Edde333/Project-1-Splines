@@ -259,7 +259,7 @@ def BFGS(function, gradient, xk, xk_1, prev_hessian):
     return prev_hessian + first_term*sec_term - third_term 
 
 
-def brute_inv_hessian(function, xk, h = 0.0001):
+def brute_inv_hessian(function, xk, h = 0.000001):
     '''
     Calculates the approximated inverse Hessian matrix for the probmlem at the
         specified points xk, using a simple brute force method
@@ -286,10 +286,12 @@ def brute_inv_hessian(function, xk, h = 0.0001):
         J[index[1]] = 0
     hessian = 1/2*(hessian + hessian.T)
         # checks that hessian is positive definite
+    """
     try:
         np.linalg.cholesky(hessian)
     except np.linalg.LinAlgError:
         raise Exception("Hessian matrix not positive definite")
+    """
     inv_hessian = np.linalg.inv(hessian)
     return inv_hessian
 
