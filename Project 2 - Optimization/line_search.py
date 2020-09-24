@@ -106,7 +106,7 @@ def line_search(f, g, xk, sk, line_search_method = "exact", line_search_conditio
                 aU = min(a0, aU)
                 abar = interpolate(a0, aL, fa0, faL, gaL)
                 abar = max(abar, aL + tau * (aU - aL))
-                abar = min(a0, aU - tau * (aU - aL))
+                abar = min(abar, aU - tau * (aU - aL))
                 a0 = abar
             
             a0k = (np.add(xk, a0 * sk))
