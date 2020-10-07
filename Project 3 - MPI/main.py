@@ -22,7 +22,6 @@ if __name__ == "__main__":
 
         # Create region
         r = region(points, edge_type, fetch, edge_init, dx)
-
         # Solve system
         r.solve(comm)
 
@@ -36,7 +35,7 @@ if __name__ == "__main__":
 
         # Create region
         r = region(points, edge_type, fetch, edge_init, dx)
-
+        
         # Solve system
         comm.send(guess, dest=1)
         r.solve(comm)
@@ -44,14 +43,14 @@ if __name__ == "__main__":
     # Region 3 (top right)
     if comm.Get_rank() == 3:
         # Define region
-        points = np.array([(0, 1), (1, 1), (1, 0), (0, 0)])
+        points = np.array([(0,1), (1,1), (1,0), (0,0)])
         edge_type = np.array(['d', 'd', 'd', 'n'])
         fetch = np.array([None, None, None, 1])
         edge_init = np.array([15, 40, 15, None])
 
         # Create region
         r = region(points, edge_type, fetch, edge_init, dx)
-
+        
         # Solve system
         comm.send(guess, dest=1)
         r.solve(comm)
