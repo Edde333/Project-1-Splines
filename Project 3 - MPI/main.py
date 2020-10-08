@@ -62,5 +62,5 @@ if __name__ == "__main__":
         v3 = comm.recv(source = 3)
         
         
-        v1
+        
         # Plotting ???
