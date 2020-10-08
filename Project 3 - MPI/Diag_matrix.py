@@ -9,7 +9,7 @@ from scipy.sparse import dia_matrix
 import numpy as np
 
 
-def get_diag_matrix(ylen, nbrnodes, stepsize):
+def get_diag_matrix(ylen, nbrnodes, edof, e_type):
 
     n = nbrnodes
     ex = np.ones(n)
@@ -20,9 +20,11 @@ def get_diag_matrix(ylen, nbrnodes, stepsize):
     
     sub1 = np.eye(n, k = -ylen)
     sub2 = np.eye(n, k =ylen)
-    
+
     A = (A + sub1 + sub2)
+
     
+    print(A)
     return A
 
     
@@ -31,7 +33,6 @@ def get_diag_matrix(ylen, nbrnodes, stepsize):
     
 if __name__ == "__main__":
     
-    stepsize = 1
-    nbrnodes = 18
+    nbrnodes = 9
     ylen = 3
-    A = get_diag_matrix(ylen, nbrnodes, stepsize)
+    A = get_diag_matrix(ylen, nbrnodes, 1,1)

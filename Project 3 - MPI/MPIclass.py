@@ -7,6 +7,7 @@ Created on Wed Oct  7 08:28:46 2020
 """
 
 import scipy as sp
+from scipy import linalg
 import numpy as np
 from mpi4py import MPI 
 
@@ -14,6 +15,10 @@ from mpi4py import MPI
 
 
 class heatEqSolver():
+    
+    dx = 1/3
+    omega = 0.8
+    nbriterations = 10
     
     comm = MPI.COMM_WORLD()
     rank = comm.Get_rank()
@@ -24,90 +29,173 @@ class heatEqSolver():
         for i in range(size-1):
             temps = comm.recv(source = i + 1)
             coords = comm.recv(source = i + 1)
-    # plots the  temperature distribution       
+        # plots the  temperature distribution       
             
             
             
     else:
         # find sub-problem, use solver to get temperatures
-        [temps, coords] = solver()
+        [temps, coords] = solver(self, p, dx, e_type, e_Temp, omega)
         comm.send(temps, 0)
         comm.send(coords, 0)
         
             
     
         
-    def solver(p, dx, e_type, e_Temp, nbriterations):
+    def solver(self, p, dx, e_type, e_Temp, nbriterations, omega):
         
         xp = p[:,0]
         yp = p[:,1]
         
-        width = np.argmax(xp) - np.argmin(xp)
-        height = np. argmax(yp) - np.argmin(yp)
+        x_max = np.argmax(xp)
+        x_min = np.argmin(xp)
+        y_max = np.argmax(yp)
+        y_min = np.argmin(yp)
+        
+        width =  x_max - x_min
+        height = y_max - y_min
 
         xx = np.linspace(0,width, width/dx)
         yy = np.linspace(0,height, height/dx)
         
         
-        nodes = np.zeros((len(xx)*len(yy),2))
-        
-        
+        nodes = np.zeros((len(xx)*len(yy),3))
         a = 0
         for i in range (len(xx)) :
             for j in range (len(yy)):
                 nodes[a,0] = xx[i]
                 nodes[a,1] = yy[j]
-                a = a+1
+                nodes[a,2] = None 
+                a = a+1        
         
-        #coordinates = 
+        coordinates = nodes + np.full((len(xx)*len(yy),3), [np.argmin(xp), np.argmin(yp), None])
+        
+        A = 1/dx**2 * get_diag_matrix(height/dx, len(v))
+        
+        
+        x_dof = int(round(width / dx + 1))
+        self.x_dof = x_dof
+        y_dof = int(round(height / dx + 1))
+        self.y_dof = y_dof
+        nbr_dof = x_dof * y_dof
+        self.nbr_dof = nbr_dof
+        
+        # Find which dof:s belong to the edges
+        edof = [np.array([])] * len(p)
+        for i in range(len(edof)):
+            
+            # Edge nbr. i-1
+            e = np.array([p[i-1], p[i]])
+
+            # Horisontal edge 
+            if e[0,1] == e[1,1]:
+
+                # Top edge (i = 0 in v_ij)
+                if e[0,1] == y_max:
+                    poss_dofs = range(x_dof)
+                    # Loop through relevant dofs
+                    for dof in poss_dofs:
+                        if x[dof] >= e[0,0] and x[dof] < e[1,0]:
+                            edof[i-1] = np.append(edof[i-1], dof)
+                            
+                # Bottom edge (i = y_dof in v_ij)
+                else:
+                    poss_dofs = range(x_dof*(y_dof-1), nbr_dof)
+                    for dof in poss_dofs:
+                        if x[dof] <= e[0,0] and x[dof] > e[1,0]:
+                            edof[i-1] = np.append(edof[i-1], dof)
+
+            # Vertical edge
+            else:
+
+                # Left edge (j = 0 in v_ij)
+                if e[0,0] == x_min:
+                    poss_dofs = range(0, nbr_dof, x_dof)
+                    for dof in poss_dofs:
+                        if y[dof] >= e[0,1] and y[dof] < e[1,1]:
+                            edof[i-1] = np.append(edof[i-1], dof)
+
+                # Right edge    
+                else:
+                    poss_dofs = range(x_dof-1, nbr_dof, x_dof)
+                    for dof in poss_dofs:
+                        if y[dof] <= e[0,1] and y[dof] > e[1,1]:
+                            edof[i-1] = np.append(edof[i-1], dof)
+                            
+        self.edof = edof
+        print(edof)
+
+        
+        
         
         
         # Get the A-matrix for the sub-problem
-        A = get_diag_matrix(height/dx, len(v))
+        A = 1/dx**2 * get_diag_matrix(height/dx, len(v))
+        for i in range (len(nodes)):
+            
+
         
-        
-        # Pairs boundaries to specific nodes, creates the constant vector f
+        # Get the fbc vector of known boundaris with dirichlet conditions
+        fbc = np.zeros(len(A)).T
+        # Pairs boundaries to specific nodes, creates the constant vector fbc
         for i in range (len(e_type)):
             if e_type[i] == d:
-                # inserts:  - 1/dx**2 * T   into the f-vector, 
-                 
-        
-        
-        # Get the f vector of known temperatures with dirichlet conditions
-        f = np.zeros(len(nodes)).T
-        
-        
-        
-        
-        
-        fetch = np.array([])
-        e_initint = np.array([])
-        edge_nodes = np.array([])
-        src = np.array([])
+                fbc = fbc + 1/dx**2 * T[i] @ indices
+                # inserts:  - 1/dx**2 * T   into the f-vector
+                   
+                
 
         
         if rank != 1 :
             gammanodes = np.array([])
-            gamma{rank} = 15*np.ones(len(gammanodes))
+            gammaDir = 15*np.ones(len(gammanodes))
             
-            comm.send(edgetemp, src)
             
             for i in range (nbriterations):
+                comm.send(gammaDir, src)
                 gammaNeu = comm.recv(gammaNeu, source =1)
+                # Update the fNbc vector with the values from rank == 1
+                fNc = - 1/dx * gammaNeu #at the given instances 
+                f = fbc + fNc
+                vk1 = sp.linalg.solve(A,f)
+                if i > 0:
+                    vk1 = omega * vk1 + (1- omega) * vk
+                vk = vk1
+                # gamma takes the vk values calculated above that corresponds 
+                # to the nodes along the boundary 
+                gammaNeu = vk @ indices 
+                
+                
+            temperatures = vk
+            return [vk, coordinates]
+                
                 
                 
             
         elif rank == 1:
-            for n in range (nbriterations)
-                for i in range (len(src))
-                    gamma{src[i]} = comm.recv(gamma{i}, source = src{i})
+            for n in range (nbriterations):
+                f = fbc
+                
+                for i in range (len(src)):
+                    gammaDir = comm.recv(gammaDir, source = src[i+2])
                     # add gamma to f-vector
+                    fDc = 1/dx**2 * gammaDir @ indices
+                    f = f + fDc
+                
+                vk = sp.linalg.solve(A,f)
+                
+                for i in range (len(src)):  
+                    gammaNeu = vk @ indices 
+                    comm.send(gammaNeu, src)
                     
-                    v = sp.linalg.solve(A,f)
+            return [vk, coordinates]
+                    
+                    
+                    
                     
             
         # Pairs the temperatures with the initial coordinates      
-        temps =     
+        # temperatures = 
             
         
 
