@@ -82,7 +82,7 @@ class region:
                 else:
                     edge_orient[i-1] = 'b'
                     
-                    poss_dofs = range(x_dof*(y_dof-1), nbr_dof)
+                    poss_dofs = range(nbr_dof-x_dof, nbr_dof)
                     for dof in poss_dofs:
                         if x[dof] < e[0,0] and x[dof] > e[1,0]:
                             edof[i-1] = np.append(edof[i-1], dof)
@@ -117,6 +117,7 @@ class region:
                 
         # Handle mulpiple edges on vertical edge
         for i in range(len(edof)):
+            # Same edge orientation as last edge
             if edge_orient[i-1] == edge_orient[i]:
                 # If we are fetching we have dof priority
                 if fetch[i-1] != None:
@@ -134,9 +135,11 @@ class region:
                 
         self.edof = edof
         self.edge_orient = edge_orient
+        self.d_dofs = d_dofs
         self.red_dofs = red_dofs
+        
 
-    def solve(self, comm):
+    def solve(self, comm, nbr_iter = 10, omega = 0.8):
         """
         Solves the Laplace equation for the region and sends data to
         corresponding process through MPI.
@@ -151,15 +154,15 @@ class region:
         ex = np.ones(self.nbr_dof)  
         data = np.array([ex,-4*ex,ex])
         offsets = np.array([-1, 0,  1])
-        A = dia_matrix((data, offsets), shape=(self.nbr_dof, self.nbr_dof)).toarray()
-        
+        A = dia_matrix((data, offsets), shape=(self.nbr_dof, self.nbr_dof)).toarray()      
         sub1 = np.eye(self.nbr_dof, k = -self.x_dof)
-        sub2 = np.eye(self.nbr_dof, k = self.x_dof)
-    
+        sub2 = np.eye(self.nbr_dof, k = self.x_dof)   
         A = (A + sub1 + sub2)
+        
+        # Initiate f
         f = np.zeros(self.nbr_dof) 
         
-        # Modify A and create basic f by looping through edge_dofs
+        # Modify A and f by looping through edge_dofs
         for i in range(len(self.edof)):
             # Edge nbr. i
             
@@ -169,23 +172,27 @@ class region:
             # Loop through dofs in edge nbr. i
             for dof in self.edof[i]:
                 
-                #dof = int(dof)
-                # Diagonal 
+                # Diagonal element 
                 A[dof,dof] = -3
                 
-                # Dirichlet condition (No A modification)
+                # Dirichlet condition (No A modification because corresponding
+                # row and column will be reduced away)
                 if self.edge_type[i] == 'd':
-                    # Condition is known and constant (constructs basic f)
+                    # Condition is known and constant (constructs constant f)
                     if self.fetch[i] == None:
                         fv = (-1) * self.edge_init[i] / (self.dx**2)
                         if eo == 't':
                             f[dof+self.x_dof] += fv
-                            f[dof-1] += fv
-                            f[dof+1] += fv
+                            if dof != 0:    
+                                f[dof-1] += fv
+                            if dof != self.x_dof-1:
+                                f[dof+1] += fv
                         elif eo == 'b':
                             f[dof-self.x_dof] += fv
-                            f[dof-1] += fv
-                            f[dof+1] += fv
+                            if dof != self.nbr_dof-self.x_dof:
+                                f[dof-1] += fv
+                            if dof != self.nbr_dof-1:
+                                f[dof+1] += fv
                         elif eo == 'l':
                             f[dof+1] += fv
                             if dof != 0:
@@ -203,36 +210,43 @@ class region:
                 # Neumann condition (A is modified and basic f constructed)
                 else:
                     # A modification
-                    if eo == 'l':
+                    if eo == 'l' and dof != 0:
                         A[dof, dof-1] = 0
-                    elif eo == 'r':
-                        if dof != self.nbr_dof-1:
-                            A[dof, dof+1] = 0   
+                    elif eo == 'r' and dof != self.nbr_dof-1:
+                        A[dof, dof+1] = 0
+                    # eo == 't' and 'b' is taken care of automatically
                     
                     # Condition is known and constant
                     if self.fetch[i] == None:  
                         f[dof] += (-1) * self.edge_init[i] / self.dx
         
-        vertices_dof = np.array([0, self.x_dof-1, 
-                                  self.nbr_dof-self.x_dof, self.nbr_dof-1])
-        for dof in vertices_dof:
-            A[dof,dof] = -2
-            
+        # Handle vertices seperately        
+        v_dof = np.array([0, self.x_dof-1, 
+                          self.nbr_dof-self.x_dof, self.nbr_dof-1])
+        # If Neumann node
+        if not (v_dof[0] in self.d_dofs) and (v_dof[0]+1 in self.d_dofs):
+            A[v_dof[0], v_dof[0]+1] = 0       
+        if (not v_dof[1] in self.d_dofs) and (v_dof[1]-1 in self.d_dofs):
+            A[v_dof[1], v_dof[1]-1] = 0   
+        if (not v_dof[2] in self.d_dofs) and (v_dof[2]+1 in self.d_dofs):
+            A[v_dof[2], v_dof[2]+1] = 0
+        if (not v_dof[3] in self.d_dofs) and (v_dof[3]-1 in self.d_dofs):
+            A[v_dof[3], v_dof[3]-1] = 0
+                
+                
+        # Complete A definition  
         A = A / (self.dx**2)
+        # Define reduced A-matrix
+        A_red = A[self.red_dofs][:,self.red_dofs]
         
         # Add known bc:s to v-vector
+        v_old = np.zeros(self.nbr_dof)
         v = np.zeros(self.nbr_dof)
         for i in range(len(self.edof)):
             if self.fetch[i] == None and self.edge_type[i] == 'd':
                 v[self.edof[i]] = self.edge_init[i]
         
-        A_red = A[self.red_dofs][:,self.red_dofs]
-
-        print(f/4)
-        
-        omega = 0.8
-        # Solving loop
-        nbr_iter = 10
+        # Solving loop        
         for i in range(nbr_iter):
             # Recieve fetched conditions and update f
             f_new = f.copy()
@@ -243,8 +257,7 @@ class region:
                 # Edge that fetches boundary condition from other process
                 if self.fetch[j] != None:
                     cond = comm.recv(source = self.fetch[j])
-                    #cond = np.ones(len(self.edof[j])) # Test value
-                    
+
                     eo = self.edge_orient[j]
                     
                     # Dirichlet condition
@@ -260,7 +273,7 @@ class region:
                         elif eo == 'l':
                             f_new[self.edof[j]+1] += fv
                         else: # eo == 'r'
-                            f_new[self.edof[j]+1] -= fv
+                            f_new[self.edof[j]-1] += fv
                            
                     # Neumann condition
                     else:
@@ -268,12 +281,8 @@ class region:
             
             
             # Reduce equation system and solve
-            
             f_red = f_new[self.red_dofs]
-
             v_red = linalg.inv(A_red).dot(f_red)
-
-            
             v[self.red_dofs] = v_red
 
             # Relaxation
@@ -313,16 +322,16 @@ class region:
 
 if __name__ == "__main__":
     guess = 20
-    dx = 0.5
+    dx = 0.15
     # Define region
-    #points = np.array([(0,2), (1,2), (1,1), (1,0), (0,0), (0,1)])
-    points = np.array([(0,1), (1,1), (1,0), (0,0)])
-    edge_type = np.array(['d', 'n', 'd', 'd'])
-    fetch = np.array([None, 3, None, None])
-    edge_init = np.array([40, None, 5, 15])
+    points = np.array([(0,2), (1,2), (1,1), (1,0), (0,0), (0,1)])
+    #points = np.array([(0,1), (1,1), (1,0), (0,0)])
+    edge_type = np.array(['d', 'd', 'd', 'd', 'd', 'd'])
+    fetch = np.array([None, 3, None, None, 2, None])
+    edge_init = np.array([40, None, 5, 15, None, 40])
 
     # Create region
     r = region(points, edge_type, fetch, edge_init, dx)
     
     # Solve
-    v = r.solve(1)
+    #v = r.solve(1)

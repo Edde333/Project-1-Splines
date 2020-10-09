@@ -6,7 +6,7 @@ from scipy import interpolate
 
 if __name__ == "__main__":
 
-    dx = 0.5
+    dx = 0.05
     guess = 20
 
     # Get communicator
@@ -86,3 +86,4 @@ if __name__ == "__main__":
         fig, ax = plt.subplots()
         im = ax.imshow(plot_image, cmap='jet')
         fig.colorbar(im)
+        plt.show()
