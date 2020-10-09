@@ -8,32 +8,32 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy import interpolate
 
-a = np.array([np.linspace(0,9,10)])
+a = np.array([np.linspace(0, 9, 10)])
 aext = a
 for i in range(9):
-    aext = np.concatenate((aext,a))
-    
-room2x = np.linspace(0,1,10)
-room2y = np.linspace(0,1,10)
+    aext = np.concatenate((aext, a))
 
-z2 = interpolate.interp2d(room2x,room2y,aext)
+room2x = np.linspace(0, 1, 10)
+room2y = np.linspace(0, 1, 10)
 
-znew2 = z2(np.arange(0,1,1e-2),np.arange(0,1,1e-2))
+z2 = interpolate.interp2d(room2x, room2y, aext)
+
+znew2 = z2(np.arange(0, 1, 1e-2), np.arange(0, 1, 1e-2))
 plt.figure(1)
-plt.imshow(znew2)    
+plt.imshow(znew2)
 
 blackbox = np.zeros((np.shape(znew2)[1], np.shape(znew2)[1]))
 
 a = abs(a-10)
 aext = a
 for i in range(19):
-    aext = np.concatenate((aext,a))
-    
-room1x = np.linspace(0,1,10)
-room1y = np.linspace(0,2,20)
+    aext = np.concatenate((aext, a))
+
+room1x = np.linspace(0, 1, 10)
+room1y = np.linspace(0, 2, 20)
 
 z1 = interpolate.interp2d(room1x, room1y, aext)
-znew1 = z1(np.arange(0,1,1e-2),np.arange(0,2,1e-2))
+znew1 = z1(np.arange(0, 1, 1e-2), np.arange(0, 2, 1e-2))
 plt.figure(2)
 plt.imshow(znew1)    
 
