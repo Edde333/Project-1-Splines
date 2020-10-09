@@ -17,13 +17,14 @@ if __name__ == "__main__":
         # Define region
         points = np.array([(0, 2), (1, 2), (1, 1), (1, 0), (0, 0), (0, 1)])
         edge_type = np.array(['d', 'd', 'd', 'd', 'd', 'd'])
-        fetch = np.array([None, 3, None, None, None, None])
+        fetch = np.array([None, 3, None, None, 2, None])
         edge_init = np.array([40, None, 15, 5, None, 15])
 
         # Create region
         r = region(points, edge_type, fetch, edge_init, dx)
         # Solve system
-        r.solve(comm)
+        res = r.solve(comm)
+        comm.send(res, dest=0)
 
     # Region 2 (bottom left)
     if comm.Get_rank() == 2:
@@ -38,7 +39,8 @@ if __name__ == "__main__":
         
         # Solve system
         comm.send(guess, dest=1)
-        r.solve(comm)
+        res = r.solve(comm)
+        comm.send(res, dest=0)
 
     # Region 3 (top right)
     if comm.Get_rank() == 3:
@@ -53,7 +55,8 @@ if __name__ == "__main__":
         
         # Solve system
         comm.send(guess, dest=1)
-        r.solve(comm)
+        res = r.solve(comm)
+        comm.send(res, dest=0)
 
     # Summarize result and plot
     if comm.Get_rank() == 0:
@@ -73,10 +76,10 @@ if __name__ == "__main__":
         v1_int_2d = v1_int_f(np.arange(0, 1, prec), np.arange(0, 2, prec))
         v2_int_2d = v2_int_f(np.arange(0, 1, prec), np.arange(0, 1, prec))
         v3_int_2d = v3_int_f(np.arange(0, 1, prec), np.arange(0, 1, prec))
-        black_room = np.zeros((np.shape(v2)[0], np.shape(v2)[1]))
+        black_room = np.zeros((np.shape(v2_int_2d)[0], np.shape(v2_int_2d)[1]))
 
         # Concatenate 'rooms' to get the full picture. 
-        plot_image = np.concatenate((black_room, v2))
+        plot_image = np.concatenate((black_room, v2_int_2d))
         plot_image = np.concatenate((plot_image, v1_int_2d), 1)
         right = np.concatenate((v3_int_2d, black_room))
         plot_image = np.concatenate((plot_image, right), 1)

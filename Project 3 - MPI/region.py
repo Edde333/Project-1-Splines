@@ -1,3 +1,4 @@
+from mpi4py import MPI
 import numpy as np
 import sys
 from scipy.sparse import dia_matrix
@@ -175,7 +176,7 @@ class region:
                 # Dirichlet condition (No A modification)
                 if self.edge_type[i] == 'd':
                     # Condition is known and constant (constructs basic f)
-                    if fetch[i] == None:
+                    if self.fetch[i] == None:
                         fv = (-1) * self.edge_init[i] / (self.dx**2)
                         if eo == 't':
                             f[dof+self.x_dof] += fv
@@ -209,7 +210,7 @@ class region:
                             A[dof, dof+1] = 0   
                     
                     # Condition is known and constant
-                    if fetch[i] == None:  
+                    if self.fetch[i] == None:  
                         f[dof] += (-1) * self.edge_init[i] / self.dx
         
         vertices_dof = np.array([0, self.x_dof-1, 
@@ -219,15 +220,20 @@ class region:
             
         A = A / (self.dx**2)
         
+        # Add known bc:s to v-vector
         v = np.zeros(self.nbr_dof)
         for i in range(len(self.edof)):
-            if fetch[i] == None and edge_type[i] == 'd':
+            if self.fetch[i] == None and self.edge_type[i] == 'd':
                 v[self.edof[i]] = self.edge_init[i]
         
         A_red = A[self.red_dofs][:,self.red_dofs]
+
+        print(f/4)
         
+        omega = 0.8
         # Solving loop
-        for i in range(1):
+        nbr_iter = 10
+        for i in range(nbr_iter):
             # Recieve fetched conditions and update f
             f_new = f.copy()
             # Loop through edges
@@ -235,14 +241,14 @@ class region:
                 # Edge nbr. j
                 
                 # Edge that fetches boundary condition from other process
-                if fetch[j] != None:
-                    #cond = comm.recv(source = fetch[j])
-                    cond = np.ones(len(self.edof[j])) # Test value
+                if self.fetch[j] != None:
+                    cond = comm.recv(source = self.fetch[j])
+                    #cond = np.ones(len(self.edof[j])) # Test value
                     
                     eo = self.edge_orient[j]
                     
                     # Dirichlet condition
-                    if edge_type[j] == 'd':
+                    if self.edge_type[j] == 'd':
                         v[self.edof[j]] = cond
                         
                         fv = (-1) * cond / (self.dx**2)
@@ -269,15 +275,45 @@ class region:
 
             
             v[self.red_dofs] = v_red
+
+            # Relaxation
+            if i > 0:
+                v = omega * v + (1-omega) * v_old
+            v_old = v.copy()
             
-            
-            
-        v = v.reshape(self.x_dof,self.y_dof)
-        return v
+            # Loop through edges
+            for j in range(len(self.edof)):
+                # Edge nbr. j
+                
+                # Edge that sends boundary condition from other process
+                if self.fetch[j] != None:
+                    # Send Dirichlet
+                    if self.edge_type[j] == 'n':
+                        data = v[self.edof[j]]
+                    # Send Neumann    
+                    else:
+                        eo = self.edge_orient[j]
+                        if eo == 'l':
+                            data = (v[self.edof[j]+1] - v[self.edof[j]]) / self.dx
+                        elif eo == 'r':
+                            data = (v[self.edof[j]-1] - v[self.edof[j]]) / self.dx
+                        elif eo == 't':
+                            data = (v[self.edof[j]+self.x_dof] - v[self.edof[j]]) / self.dx
+                        else: # eo == 'b'
+                            data = (v[self.edof[j]-self.x_dof] - v[self.edof[j]]) / self.dx
+
+                    # Don't send last time if in process 2 or 3
+                    if i == nbr_iter-1:
+                        if comm.Get_rank() == 1:
+                            comm.send(data, self.fetch[j])
+                    else:    
+                        comm.send(data, self.fetch[j])
+   
+        return np.reshape(v, (int(self.y_dof),int(self.x_dof)))
 
 if __name__ == "__main__":
     guess = 20
-    dx = 0.01
+    dx = 0.5
     # Define region
     #points = np.array([(0,2), (1,2), (1,1), (1,0), (0,0), (0,1)])
     points = np.array([(0,1), (1,1), (1,0), (0,0)])
