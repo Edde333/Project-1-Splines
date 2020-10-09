@@ -81,4 +81,6 @@ if __name__ == "__main__":
         plot_image = np.concatenate((plot_image, v1_int_2d), 1)
         right = np.concatenate((v3_int_2d, black_room))
         plot_image = np.concatenate((plot_image, right), 1)
-        plt.imshow(plot_image)
+        fig, ax = plt.subplots()
+        im = ax.imshow(plot_image, cmap='jet')
+        fig.colorbar(im)
