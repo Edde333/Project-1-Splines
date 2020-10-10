@@ -1,6 +1,5 @@
-from mpi4py import MPI
 import numpy as np
-import sys
+from get_mesh import get_mesh
 from scipy.sparse import dia_matrix
 from scipy import linalg
 
@@ -19,122 +18,27 @@ class region:
         self.dx = dx
         
         # Create mesh
-        x_min = sys.float_info.max
-        y_min = sys.float_info.max
-
-        x_max = (-1) * sys.float_info.max
-        y_max = (-1) * sys.float_info.max
-        
-        for p in points:
-            if p[0] < x_min:
-                x_min = p[0]
-            if p[0] > x_max:
-                x_max = p[0]
-            
-            if p[1] < y_min:
-                y_min = p[1]
-            if p[1] > y_max:
-                y_max = p[1]
-        
-        base = x_max - x_min
-        height = y_max - y_min
-
-        x_dof = int(round(base / dx + 1))
-        self.x_dof = x_dof
-        y_dof = int(round(height / dx + 1))
-        self.y_dof = y_dof
+        x_dof, y_dof, edof, edge_orient = get_mesh(points, dx, fetch)
         nbr_dof = x_dof * y_dof
-        self.nbr_dof = nbr_dof
         
-        # Coordinate vectors
-        x = np.array([])
-        xr = np.arange(x_dof) * dx
-        for i in range(y_dof):
-            x = np.append(x, xr)
-
-        y = np.array([])
-        yr = np.ones(x_dof) * height
-        for i in range(y_dof):
-            y = np.append(y, yr)
-            yr -= dx
-
-        # Find which dof:s belong to the edges
-        edof = [np.array([], dtype = int)] * len(points)
-        edge_orient = [None] * len(points)
-        d_dofs = np.array([], dtype = int) # Dirichlet dofs
+        self.x_dof = x_dof
+        self.y_dof = y_dof
+        self.nbr_dof = nbr_dof
+        self.edof = edof
+        self.edge_orient = edge_orient
+        
+        # Find the dirichlet dofs
+        d_dofs = np.array([], dtype = int)
         for i in range(len(edof)):
-            # Edge nbr. i-1
-            e = np.array([points[i-1], points[i]])
-
-            # Horisontal edge 
-            if e[0,1] == e[1,1]:
-
-                # Top edge (i = 0 in v_ij)
-                if e[0,1] == y_max:
-                    edge_orient[i-1] = 't'
-
-                    poss_dofs = range(x_dof)
-                    # Loop through relevant dofs
-                    for dof in poss_dofs:
-                        if x[dof] > e[0,0] and x[dof] < e[1,0]:
-                            edof[i-1] = np.append(edof[i-1], dof)
-                # Bottom edge (i = y_dof in v_ij)
-                else:
-                    edge_orient[i-1] = 'b'
-                    
-                    poss_dofs = range(nbr_dof-x_dof, nbr_dof)
-                    for dof in poss_dofs:
-                        if x[dof] < e[0,0] and x[dof] > e[1,0]:
-                            edof[i-1] = np.append(edof[i-1], dof)
-
-            # Vertical edge
-            else:
-
-                # Left edge (j = 0 in v_ij)
-                if e[0,0] == x_min:
-                    edge_orient[i-1] = 'l'
-                    
-                    poss_dofs = range(0, nbr_dof, x_dof)
-                    for dof in poss_dofs:
-                        if y[dof] >= e[0,1] and y[dof] <= e[1,1]:
-                            edof[i-1] = np.append(edof[i-1], dof)
-
-                # Right edge    
-                else:
-                    edge_orient[i-1] = 'r'
-                    
-                    poss_dofs = range(x_dof-1, nbr_dof, x_dof)
-                    for dof in poss_dofs:
-                        if y[dof] <= e[0,1] and y[dof] >= e[1,1]:
-                            edof[i-1] = np.append(edof[i-1], dof)
-            
-            # Keep the dofs sorted for correct communication
-            edof[i-1].sort()
-
-            # Save the dirichlet dofs
-            if edge_type[i-1] == 'd':
-                d_dofs = np.append(d_dofs, edof[i-1])
-                
-        # Handle mulpiple edges on vertical edge
-        for i in range(len(edof)):
-            # Same edge orientation as last edge
-            if edge_orient[i-1] == edge_orient[i]:
-                # If we are fetching we have dof priority
-                if fetch[i-1] != None:
-                    if edge_orient[i] == 'l':
-                        edof[i] = np.delete(edof[i], -1)
-                    else: # right edge
-                        edof[i] = np.delete(edof[i], 0)
-            
+            if edge_type[i] == 'd':
+                d_dofs = np.append(d_dofs, edof[i])
+        
         # Find the dofs to keep in reduced equation system
         red_dofs = np.array([], dtype = int)
         for i in range(nbr_dof):
             if not (i in d_dofs):
                 red_dofs = np.append(red_dofs, i)
-                
-                
-        self.edof = edof
-        self.edge_orient = edge_orient
+        
         self.d_dofs = d_dofs
         self.red_dofs = red_dofs
         
@@ -248,6 +152,7 @@ class region:
         
         # Solving loop        
         for i in range(nbr_iter):
+            
             # Recieve fetched conditions and update f
             f_new = f.copy()
             # Loop through edges
