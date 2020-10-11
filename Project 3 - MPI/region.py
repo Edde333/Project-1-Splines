@@ -1,7 +1,7 @@
 import numpy as np
 from get_mesh import get_mesh
-from scipy.sparse import dia_matrix
-from scipy import linalg
+from scipy.sparse import csr_matrix
+from scipy.sparse.linalg import spsolve
 
 class region:
     """
@@ -53,18 +53,39 @@ class region:
         Temperature field, (x_dof * y_dof)-np-array
 
         """
-      
-        # Initiate A
-        ex = np.ones(self.nbr_dof)  
-        data = np.array([ex,-4*ex,ex])
-        offsets = np.array([-1, 0,  1])
-        A = dia_matrix((data, offsets), shape=(self.nbr_dof, self.nbr_dof)).toarray()      
-        sub1 = np.eye(self.nbr_dof, k = -self.x_dof)
-        sub2 = np.eye(self.nbr_dof, k = self.x_dof)   
-        A = (A + sub1 + sub2)
         
-        # Initiate f
-        f = np.zeros(self.nbr_dof) 
+        # Initiate sparse matrix representation of equation system
+        values = np.array([])
+        row_ind = np.array([], dtype = int)
+        col_ind = np.array([], dtype = int)
+        
+        f_values = np.array([])
+        f_ind = np.array([], dtype = int)
+        
+        # A-matrix
+        # Diagonal
+        values = np.append(values, np.ones(self.nbr_dof) * (-4))
+        row_ind = np.append(row_ind, np.arange(self.nbr_dof))
+        col_ind = np.append(col_ind, np.arange(self.nbr_dof))
+        
+        # Diagonal offset 1
+        values = np.append(values, np.ones(2 * self.nbr_dof - 2))
+        # Top diagonal
+        row_ind = np.append(row_ind, np.arange(self.nbr_dof-1))
+        col_ind = np.append(col_ind, np.arange(1, self.nbr_dof))
+        # Bottom diagonal
+        row_ind = np.append(row_ind, np.arange(1, self.nbr_dof))
+        col_ind = np.append(col_ind, np.arange(self.nbr_dof-1))
+        
+        # Diagonal offset x_dof
+        values = np.append(values, np.ones(2*(self.nbr_dof-self.x_dof)))
+        # Top diagonal
+        row_ind = np.append(row_ind, np.arange(self.nbr_dof-self.x_dof))
+        col_ind = np.append(col_ind, np.arange(self.x_dof, self.nbr_dof))
+        # Bottom diagonal         
+        row_ind = np.append(row_ind, np.arange(self.x_dof, self.nbr_dof))
+        col_ind = np.append(col_ind, np.arange(self.nbr_dof-self.x_dof))
+        
         
         # Modify A and f by looping through edge_dofs
         for i in range(len(self.edof)):
@@ -76,158 +97,228 @@ class region:
             # Loop through dofs in edge nbr. i
             for dof in self.edof[i]:
                 
-                # Diagonal element 
-                A[dof,dof] = -3
-                
                 # Dirichlet condition (No A modification because corresponding
                 # row and column will be reduced away)
                 if self.edge_type[i] == 'd':
                     # Condition is known and constant (constructs constant f)
                     if self.fetch[i] == None:
-                        fv = (-1) * self.edge_init[i] / (self.dx**2)
+                        f_values = np.append(f_values, (-1) * self.edge_init[i] / (self.dx**2))
+                        
                         if eo == 't':
-                            f[dof+self.x_dof] += fv
-                            if dof != 0:    
-                                f[dof-1] += fv
-                            if dof != self.x_dof-1:
-                                f[dof+1] += fv
+                            f_ind = np.append(f_ind, int(dof+self.x_dof))
                         elif eo == 'b':
-                            f[dof-self.x_dof] += fv
-                            if dof != self.nbr_dof-self.x_dof:
-                                f[dof-1] += fv
-                            if dof != self.nbr_dof-1:
-                                f[dof+1] += fv
+                            f_ind = np.append(f_ind, int(dof-self.x_dof))
                         elif eo == 'l':
-                            f[dof+1] += fv
-                            if dof != 0:
-                                f[dof-self.x_dof] += fv
-                            if dof != self.nbr_dof-self.x_dof:
-                                f[dof+self.x_dof] += fv
+                            f_ind = np.append(f_ind, int(dof+1))
                         else: # eo == 'r'
-                            f[dof-1] += fv
-                            if dof != self.x_dof-1:
-                                f[dof-self.x_dof] += fv
-                            if dof != self.nbr_dof-1:
-                                f[dof+self.x_dof] += fv
+                            f_ind = np.append(f_ind, int(dof-1))
                         
                 
                 # Neumann condition (A is modified and basic f constructed)
                 else:
                     # A modification
+                    values[dof] = -3
+                    
                     if eo == 'l' and dof != 0:
-                        A[dof, dof-1] = 0
+                        values = np.append(values, -1)
+                        row_ind = np.append(row_ind, dof)
+                        col_ind = np.append(col_ind, dof-1)
                     elif eo == 'r' and dof != self.nbr_dof-1:
-                        A[dof, dof+1] = 0
+                        values = np.append(values, -1)
+                        row_ind = np.append(row_ind, dof)
+                        col_ind = np.append(col_ind, dof+1)
                     # eo == 't' and 'b' is taken care of automatically
                     
                     # Condition is known and constant
                     if self.fetch[i] == None:  
-                        f[dof] += (-1) * self.edge_init[i] / self.dx
+                        f_values = np.append(f_values, (-1) * self.edge_init[i] / self.dx)
+                        f_ind = np.append(f_ind, dof)
         
         # Handle vertices seperately        
         v_dof = np.array([0, self.x_dof-1, 
-                          self.nbr_dof-self.x_dof, self.nbr_dof-1])
-        # If Neumann node
-        if not (v_dof[0] in self.d_dofs) and (v_dof[0]+1 in self.d_dofs):
-            A[v_dof[0], v_dof[0]+1] = 0       
-        if (not v_dof[1] in self.d_dofs) and (v_dof[1]-1 in self.d_dofs):
-            A[v_dof[1], v_dof[1]-1] = 0   
-        if (not v_dof[2] in self.d_dofs) and (v_dof[2]+1 in self.d_dofs):
-            A[v_dof[2], v_dof[2]+1] = 0
-        if (not v_dof[3] in self.d_dofs) and (v_dof[3]-1 in self.d_dofs):
-            A[v_dof[3], v_dof[3]-1] = 0
-                
+                          self.nbr_dof-self.x_dof, self.nbr_dof-1],
+                         dtype = int)
+            
+        for i in range(len(self.edof)):
+            # Neumann edge
+            if self.edge_type[i] == 'n':
+                # Loop through the vertices
+                for dof in v_dof:
+                    if dof in self.edof[i]:
+                        # Center diagonal
+                        values = np.append(values, -1)
+                        row_ind = np.append(row_ind, dof)
+                        col_ind = np.append(col_ind, dof)
+                        
+                        # Top edge
+                        if self.edge_type[i] == 't':
+                            # Top right corner
+                            if dof == v_dof[1]:
+                                values = np.append(values, -1)
+                                row_ind = np.append(row_ind, dof)
+                                col_ind = np.append(col_ind, dof+1)
+                                
+                                adj_edge = i+1
+                                
+                            # Top left corner
+                            else:
+                                adj_edge = -1
+                        
+                        # Bottom edge
+                        elif self.edge_type[i] == 'b':
+                            # Bottom left corner
+                            if dof == v_dof[2]:
+                                values = np.append(values, -1)
+                                row_ind = np.append(row_ind, dof)
+                                col_ind = np.append(col_ind, dof-1)
+                                
+                                adj_edge = i+1
+                            
+                            # Bottom right corner
+                            else:
+                                adj_edge = i-1
+                                    
+                        # Left edge
+                        elif self.edge_type[i] == 'l':
+                            # Top left corner
+                            if dof == v_dof[0]:    
+                                adj_edge = 0
+                            # Bottom left corner
+                            else:
+                                adj_edge = i-1
+                                
+                        # Right edge
+                        else:
+                            # Top right corner
+                            if dof == v_dof[1]:
+                                adj_edge = i-1
+                            # Bottom right corner
+                            else:
+                                adj_edge = i+1
+                                
+                        # Adjacent dirichlet edge gives f value
+                        if self.edge_type[adj_edge] == 'd':
+                            # Other edge is not fetched since it would
+                            # include the corner
+                            f_values = np.append(f_values, (-1) * edge_init[adj_edge] / (self.dx**2))
+                            f_ind = np.append(f_ind, dof)
+                                
                 
         # Complete A definition  
-        A = A / (self.dx**2)
+        values = values / (self.dx**2)
+        
         # Define reduced A-matrix
-        A_red = A[self.red_dofs][:,self.red_dofs]
-        
-        # Add known bc:s to v-vector
-        v_old = np.zeros(self.nbr_dof)
-        v = np.zeros(self.nbr_dof)
-        for i in range(len(self.edof)):
-            if self.fetch[i] == None and self.edge_type[i] == 'd':
-                v[self.edof[i]] = self.edge_init[i]
-        
-        # Solving loop        
-        for i in range(nbr_iter):
+        # Reduce rows
+        red_row_ind = np.array([], dtype = int)
+        red_col_ind = np.array([], dtype = int)
+        red_values = np.array([])
+        for i in range(len(self.red_dofs)):
+            indices = np.where(row_ind == self.red_dofs[i])
+            red_values = np.append(red_values, values[indices])
+            red_row_ind = np.append(red_row_ind, np.ones(len(indices[0]), dtype = int) * i)
+            red_col_ind = np.append(red_col_ind, col_ind[indices])
             
-            # Recieve fetched conditions and update f
-            f_new = f.copy()
-            # Loop through edges
-            for j in range(len(self.edof)):
-                # Edge nbr. j
+        values = red_values.copy()
+        row_ind = red_row_ind.copy()
+        col_ind = red_col_ind.copy()
+        
+        # Reduce columns
+        red_row_ind = np.array([], dtype = int)
+        red_col_ind = np.array([], dtype = int)
+        red_values = np.array([])
+        for i in range(len(self.red_dofs)):
+            indices = np.where(col_ind == self.red_dofs[i])
+            red_values = np.append(red_values, values[indices])
+            red_row_ind = np.append(red_row_ind, row_ind[indices])
+            red_col_ind = np.append(red_col_ind, np.ones(len(indices[0]), dtype = int) * i)
+        
+        A = csr_matrix((red_values, (red_row_ind, red_col_ind)))
+        
+        # # Add known bc:s to v-vector
+        # v_old = np.zeros(self.nbr_dof)
+        # v = np.zeros(self.nbr_dof)
+        # for i in range(len(self.edof)):
+        #     if self.fetch[i] == None and self.edge_type[i] == 'd':
+        #         v[self.edof[i]] = self.edge_init[i]
+        
+        # # Solving loop        
+        # for i in range(nbr_iter):
+            
+        #     # Recieve fetched conditions and update f
+        #     f_new = f.copy()
+        #     # Loop through edges
+        #     for j in range(len(self.edof)):
+        #         # Edge nbr. j
                 
-                # Edge that fetches boundary condition from other process
-                if self.fetch[j] != None:
-                    cond = comm.recv(source = self.fetch[j])
+        #         # Edge that fetches boundary condition from other process
+        #         if self.fetch[j] != None:
+        #             cond = comm.recv(source = self.fetch[j])
 
-                    eo = self.edge_orient[j]
+        #             eo = self.edge_orient[j]
                     
-                    # Dirichlet condition
-                    if self.edge_type[j] == 'd':
-                        v[self.edof[j]] = cond
+        #             # Dirichlet condition
+        #             if self.edge_type[j] == 'd':
+        #                 v[self.edof[j]] = cond
                         
-                        fv = (-1) * cond / (self.dx**2)
+        #                 fv = (-1) * cond / (self.dx**2)
                         
-                        if eo == 't':
-                            f_new[self.edof[j]+self.x_dof] += fv
-                        elif eo == 'b':
-                            f_new[self.edof[j]-self.x_dof] += fv
-                        elif eo == 'l':
-                            f_new[self.edof[j]+1] += fv
-                        else: # eo == 'r'
-                            f_new[self.edof[j]-1] += fv
+        #                 if eo == 't':
+        #                     f_new[self.edof[j]+self.x_dof] += fv
+        #                 elif eo == 'b':
+        #                     f_new[self.edof[j]-self.x_dof] += fv
+        #                 elif eo == 'l':
+        #                     f_new[self.edof[j]+1] += fv
+        #                 else: # eo == 'r'
+        #                     f_new[self.edof[j]-1] += fv
                            
-                    # Neumann condition
-                    else:
-                        f_new[self.edof[j]] += (-1) * cond / self.dx
+        #             # Neumann condition
+        #             else:
+        #                 f_new[self.edof[j]] += (-1) * cond / self.dx
             
             
-            # Reduce equation system and solve
-            f_red = f_new[self.red_dofs]
-            v_red = linalg.inv(A_red).dot(f_red)
-            v[self.red_dofs] = v_red
+        #     # Reduce equation system and solve
+        #     f_red = f_new[self.red_dofs]
+        #     v_red = linalg.inv(A_red).dot(f_red)
+        #     v[self.red_dofs] = v_red
 
-            # Relaxation
-            if i > 0:
-                v = omega * v + (1-omega) * v_old
-            v_old = v.copy()
+        #     # Relaxation
+        #     if i > 0:
+        #         v = omega * v + (1-omega) * v_old
+        #     v_old = v.copy()
             
-            # Loop through edges
-            for j in range(len(self.edof)):
-                # Edge nbr. j
+        #     # Loop through edges
+        #     for j in range(len(self.edof)):
+        #         # Edge nbr. j
                 
-                # Edge that sends boundary condition from other process
-                if self.fetch[j] != None:
-                    # Send Dirichlet
-                    if self.edge_type[j] == 'n':
-                        data = v[self.edof[j]]
-                    # Send Neumann    
-                    else:
-                        eo = self.edge_orient[j]
-                        if eo == 'l':
-                            data = (v[self.edof[j]+1] - v[self.edof[j]]) / self.dx
-                        elif eo == 'r':
-                            data = (v[self.edof[j]-1] - v[self.edof[j]]) / self.dx
-                        elif eo == 't':
-                            data = (v[self.edof[j]+self.x_dof] - v[self.edof[j]]) / self.dx
-                        else: # eo == 'b'
-                            data = (v[self.edof[j]-self.x_dof] - v[self.edof[j]]) / self.dx
+        #         # Edge that sends boundary condition from other process
+        #         if self.fetch[j] != None:
+        #             # Send Dirichlet
+        #             if self.edge_type[j] == 'n':
+        #                 data = v[self.edof[j]]
+        #             # Send Neumann    
+        #             else:
+        #                 eo = self.edge_orient[j]
+        #                 if eo == 'l':
+        #                     data = (v[self.edof[j]+1] - v[self.edof[j]]) / self.dx
+        #                 elif eo == 'r':
+        #                     data = (v[self.edof[j]-1] - v[self.edof[j]]) / self.dx
+        #                 elif eo == 't':
+        #                     data = (v[self.edof[j]+self.x_dof] - v[self.edof[j]]) / self.dx
+        #                 else: # eo == 'b'
+        #                     data = (v[self.edof[j]-self.x_dof] - v[self.edof[j]]) / self.dx
 
-                    # Don't send last time if in process 2 or 3
-                    if i == nbr_iter-1:
-                        if comm.Get_rank() == 1:
-                            comm.send(data, self.fetch[j])
-                    else:    
-                        comm.send(data, self.fetch[j])
+        #             # Don't send last time if in process 2 or 3
+        #             if i == nbr_iter-1:
+        #                 if comm.Get_rank() == 1:
+        #                     comm.send(data, self.fetch[j])
+        #             else:    
+        #                 comm.send(data, self.fetch[j])
    
-        return np.reshape(v, (int(self.y_dof),int(self.x_dof)))
+        # return np.reshape(v, (int(self.y_dof),int(self.x_dof)))
 
 if __name__ == "__main__":
     guess = 20
-    dx = 0.15
+    dx = 0.01
     # Define region
     points = np.array([(0,2), (1,2), (1,1), (1,0), (0,0), (0,1)])
     #points = np.array([(0,1), (1,1), (1,0), (0,0)])
@@ -239,4 +330,4 @@ if __name__ == "__main__":
     r = region(points, edge_type, fetch, edge_init, dx)
     
     # Solve
-    #v = r.solve(1)
+    r.solve(1)
