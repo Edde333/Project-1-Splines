@@ -44,7 +44,7 @@ def get_mesh(points, dx, fetch):
 
                 edge_range = np.array([e[0,0]-x_min, e[1,0]-x_min]) / base
                 dof_range = (x_dof-1) * edge_range
-                edof[i-1] = np.arange(round(dof_range[0]), round(dof_range[1])+1)
+                edof[i-1] = np.arange(round(dof_range[0]), round(dof_range[1])+1, dtype = int)
                 
             # Bottom edge (i = y_dof in v_ij)
             else:
@@ -52,7 +52,7 @@ def get_mesh(points, dx, fetch):
                 
                 edge_range = np.array([e[1,0]-x_min, e[0,0]-x_min]) / base
                 dof_range = ((x_dof-1) * edge_range) + (nbr_dof - x_dof)
-                edof[i-1] = np.arange(round(dof_range[0]), round(dof_range[1])+1)
+                edof[i-1] = np.arange(round(dof_range[0]), round(dof_range[1])+1, dtype = int)
 
         # Vertical edge
         elif e[0,0] == e[1,0]:
@@ -63,14 +63,14 @@ def get_mesh(points, dx, fetch):
                 
                 edge_range = np.array([y_max-e[1,1], y_max-e[0,1]]) / height
                 dof_range = ((nbr_dof-x_dof) * edge_range)
-                edof[i-1] = np.arange(round(dof_range[0]), round(dof_range[1])+1, x_dof)
+                edof[i-1] = np.arange(round(dof_range[0]), round(dof_range[1])+1, x_dof, dtype = int)
 
             # Right edge    
             else:
                 edge_orient[i-1] = 'r'
                 edge_range = np.array([y_max-e[0,1], y_max-e[1,1]]) / height
                 dof_range = ((nbr_dof-x_dof) * edge_range) + (x_dof-1)
-                edof[i-1] = np.arange(round(dof_range[0]), round(dof_range[1])+1, x_dof)
+                edof[i-1] = np.arange(round(dof_range[0]), round(dof_range[1])+1, x_dof, dtype = int)
         
         else:
             raise Exception("points vector do not specify a rectangle")

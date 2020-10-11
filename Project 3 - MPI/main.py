@@ -6,7 +6,7 @@ from scipy import interpolate
 
 if __name__ == "__main__":
 
-    dx = 0.05
+    dx = 0.01
     guess = 20
 
     # Get communicator
