@@ -6,8 +6,11 @@ from scipy import interpolate
 
 if __name__ == "__main__":
 
-    dx = 0.01
+    dx = 0.05
     guess = 20
+    radiator_heat = 40
+    wall_heat = 15
+    window_heat = 5
 
     # Get communicator
     comm = MPI.COMM_WORLD
@@ -18,7 +21,7 @@ if __name__ == "__main__":
         points = np.array([(0, 2), (1, 2), (1, 1), (1, 0), (0, 0), (0, 1)])
         edge_type = np.array(['d', 'd', 'd', 'd', 'd', 'd'])
         fetch = np.array([None, 3, None, None, 2, None])
-        edge_init = np.array([40, None, 15, 5, None, 15])
+        edge_init = np.array([radiator_heat, None, wall_heat, window_heat, None, wall_heat])
 
         # Create region
         r = region(points, edge_type, fetch, edge_init, dx)
@@ -32,7 +35,7 @@ if __name__ == "__main__":
         points = np.array([(0, 1), (1, 1), (1, 0), (0, 0)])
         edge_type = np.array(['d', 'n', 'd', 'd'])
         fetch = np.array([None, 1, None, None])
-        edge_init = np.array([15, None, 15, 40])
+        edge_init = np.array([wall_heat, None, wall_heat, radiator_heat])
 
         # Create region
         r = region(points, edge_type, fetch, edge_init, dx)
@@ -48,7 +51,7 @@ if __name__ == "__main__":
         points = np.array([(0,1), (1,1), (1,0), (0,0)])
         edge_type = np.array(['d', 'd', 'd', 'n'])
         fetch = np.array([None, None, None, 1])
-        edge_init = np.array([15, 40, 15, None])
+        edge_init = np.array([wall_heat, radiator_heat, wall_heat, None])
 
         # Create region
         r = region(points, edge_type, fetch, edge_init, dx)
@@ -86,4 +89,9 @@ if __name__ == "__main__":
         fig, ax = plt.subplots()
         im = ax.imshow(plot_image, cmap='jet')
         fig.colorbar(im)
+        
+        # Where is the temperature between 20 and 25?
+        fig, ax = plt.subplots()
+        im = ax.imshow((plot_image <= 25) * (plot_image >= 20), cmap='jet')
+        
         plt.show()

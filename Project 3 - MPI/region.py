@@ -130,7 +130,7 @@ class region:
                     
                     # Condition is known and constant
                     if self.fetch[i] == None:  
-                        f[dof] = (-1) * self.edge_init[i] / self.dx
+                        f[dof] += (-1) * self.edge_init[i] / self.dx
         
         # Handle vertices seperately        
         v_dof = np.array([0, self.x_dof-1, 
@@ -196,7 +196,7 @@ class region:
                         if self.edge_type[adj_edge] == 'd':
                             # Other edge is not fetched since it would
                             # include the corner
-                            f[dof] = (-1) * self.edge_init[adj_edge] / (self.dx**2)
+                            f[dof] += (-1) * self.edge_init[adj_edge] / (self.dx**2)
                                 
                 
         # Complete A definition  
