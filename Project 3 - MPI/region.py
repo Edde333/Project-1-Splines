@@ -3,6 +3,7 @@ import numpy as np
 import sys
 from scipy.sparse import dia_matrix
 from scipy import linalg
+import scipy.sparse as sp
 
 class region:
     """
@@ -256,7 +257,7 @@ class region:
                         elif eo == 'l':
                             f_new[self.edof[j]+1] += fv
                         else: # eo == 'r'
-                            f_new[self.edof[j]+1] -= fv
+                            f_new[self.edof[j]-1] += fv
                            
                     # Neumann condition
                     else:
