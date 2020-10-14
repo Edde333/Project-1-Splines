@@ -43,7 +43,7 @@ if __name__ == "__main__":
 
         # Create region
         r = region(points, edge_type, fetch, edge_init, dx)
-        print("Process 2, Define region: ", t.time()-start_time, " s")
+        print("Process 2 define region: ", t.time()-start_time, " s")
         
         # Solve system
         comm.send(guess, dest=1)
@@ -60,7 +60,7 @@ if __name__ == "__main__":
 
         # Create region
         r = region(points, edge_type, fetch, edge_init, dx)
-        print("Process 3, Define region: ", t.time()-start_time, " s")
+        print("Process 3 define region: ", t.time()-start_time, " s")
         
         # Solve system
         comm.send(guess, dest=1)
@@ -101,9 +101,8 @@ if __name__ == "__main__":
         fig, ax = plt.subplots()
         im = ax.imshow((plot_image <= 25) * (plot_image >= 20), cmap='jet')
         
-        plt.show()
-        
-        t1 = t.time()
-        
+        t1 = t.time()        
         print("Plotting:", t1-t0, "s")
         print("Total time consumption:", t1-start_time, "s")
+        
+        plt.show()
