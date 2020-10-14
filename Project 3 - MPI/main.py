@@ -3,10 +3,11 @@ from mpi4py import MPI
 from region import region
 import matplotlib.pyplot as plt
 from scipy import interpolate
+import time as t
 
 if __name__ == "__main__":
 
-    dx = 0.05
+    dx = 0.01
     guess = 20
     radiator_heat = 40
     wall_heat = 15
@@ -14,6 +15,8 @@ if __name__ == "__main__":
 
     # Get communicator
     comm = MPI.COMM_WORLD
+    
+    start_time = t.time()
 
     # Region 1 (starts iteration)
     if comm.Get_rank() == 1:
@@ -25,6 +28,7 @@ if __name__ == "__main__":
 
         # Create region
         r = region(points, edge_type, fetch, edge_init, dx)
+        print("Process 1 define region:", t.time()-start_time, " s")
         # Solve system
         res = r.solve(comm)
         comm.send(res, dest=0)
@@ -39,6 +43,7 @@ if __name__ == "__main__":
 
         # Create region
         r = region(points, edge_type, fetch, edge_init, dx)
+        print("Process 2 define region: ", t.time()-start_time, " s")
         
         # Solve system
         comm.send(guess, dest=1)
@@ -55,6 +60,7 @@ if __name__ == "__main__":
 
         # Create region
         r = region(points, edge_type, fetch, edge_init, dx)
+        print("Process 3 define region: ", t.time()-start_time, " s")
         
         # Solve system
         comm.send(guess, dest=1)
@@ -68,6 +74,7 @@ if __name__ == "__main__":
         v2 = comm.recv(source=2)
         v3 = comm.recv(source=3)
 
+        t0 = t.time()
         # ----- Plotting ----- #
         prec = 1e-2
         room1mgrid = np.linspace(0, 1, np.shape(v1)[1])
@@ -93,5 +100,9 @@ if __name__ == "__main__":
         # Where is the temperature between 20 and 25?
         fig, ax = plt.subplots()
         im = ax.imshow((plot_image <= 25) * (plot_image >= 20), cmap='jet')
+        
+        t1 = t.time()        
+        print("Plotting:", t1-t0, "s")
+        print("Total time consumption:", t1-start_time, "s")
         
         plt.show()
