@@ -2,6 +2,7 @@ import numpy as np
 from get_mesh import get_mesh
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import spsolve
+import time as t
 
 class region:
     """
@@ -53,6 +54,7 @@ class region:
         Temperature field, (x_dof * y_dof)-np-array
 
         """
+        t0 = t.time()
         
         # Initialize sparse matrix representation of equation system
         values = np.array([])
@@ -85,7 +87,6 @@ class region:
         # Bottom diagonal         
         row_ind = np.append(row_ind, np.arange(self.x_dof, self.nbr_dof))
         col_ind = np.append(col_ind, np.arange(self.nbr_dof-self.x_dof))
-        
         
         # Modify A and f by looping through edge_dofs
         for i in range(len(self.edof)):
@@ -202,6 +203,8 @@ class region:
         # Complete A definition  
         values = values / (self.dx**2)
         
+        t1 = t.time()
+        
         # Define reduced A-matrix
         # Reduce rows
         red_row_ind = np.array([], dtype = int)
@@ -227,7 +230,11 @@ class region:
             red_row_ind = np.append(red_row_ind, row_ind[indices])
             red_col_ind = np.append(red_col_ind, np.ones(len(indices[0]), dtype = int) * i)
         
+        t2 = t.time()
+        
         A = csr_matrix((red_values, (red_row_ind, red_col_ind)))
+        
+        
         
         # Add known bc:s to v-vector
         v_old = np.zeros(self.nbr_dof)
@@ -308,6 +315,12 @@ class region:
                             comm.send(data, self.fetch[j])
                     else:    
                         comm.send(data, self.fetch[j])
+                        
+        t3 = t.time()
+                        
+        print("Process", comm.Get_rank(), "matrix setup:", t1-t0, " s")
+        print("Process", comm.Get_rank(), "reduce A-matrix:", t2-t1, " s")
+        print("Process", comm.Get_rank(), "solving loop:", t3-t2, " s")
    
         return np.reshape(v, (int(self.y_dof),int(self.x_dof)))
 
